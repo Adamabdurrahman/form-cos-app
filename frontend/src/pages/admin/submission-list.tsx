@@ -80,8 +80,8 @@ export function SubmissionList() {
         <Column dataField="id" caption="ID" width={70} />
         <Column dataField="formTitle" caption="Form" />
         <Column dataField="tanggal" caption="Tanggal" dataType="date" width={120} />
-        <Column dataField="line" caption="Line" width={70} />
-        <Column dataField="shift" caption="Shift" width={70} />
+        <Column dataField="lineId" caption="Line" width={70} />
+        <Column dataField="shiftId" caption="Shift" width={70} />
         <Column dataField="operatorName" caption="Operator" />
         <Column dataField="createdAt" caption="Created At" dataType="datetime" width={180} />
         <Column

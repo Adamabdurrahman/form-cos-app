@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:5131/api';
+// const API_BASE = 'http://192.168.122.1:5000/api';
+const API_BASE = 'https://6a72-114-124-237-130.ngrok-free.app/api';
 
 // ── Generic fetch helper ──
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
@@ -17,24 +18,50 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
 // TYPES
 // ══════════════════════════════════════════════════
 
-export interface OperatorDto { id: number; name: string; leaderId: number; }
-export interface LeaderDto { id: number; name: string; kasubsieId: number; }
-export interface KasubsieDto { id: number; name: string; kasieId: number; }
-export interface KasieDto { id: number; name: string; }
+// ── Personnel (master data, emp_id-based) ──
+export interface OperatorDto {
+  empId: string;
+  name: string;
+  empNo: string;
+  lgpId: number;
+  groupId: number;
+}
+export interface LeaderDto { empId: string; name: string; empNo?: string; }
+export interface KasubsieDto { empId: string; name: string; empNo?: string; }
+export interface KasieDto { empId: string; name: string; empNo?: string; }
 
 export interface HierarchyDto {
-  operator: { id: number; name: string };
-  leader: { id: number; name: string } | null;
-  kasubsie: { id: number; name: string } | null;
-  kasie: { id: number; name: string } | null;
+  operatorEmpId: string;
+  operatorName: string;
+  leaderEmpId: string | null;
+  leaderName: string | null;
+  kasubsieEmpId: string | null;
+  kasubsieName: string | null;
+  kasieEmpId: string | null;
+  kasieName: string | null;
+}
+
+// ── Battery / Line / Shift / Mold ──
+export interface BatteryStandardDto {
+  id: number;
+  paramKey: string;
+  value: string;
+  minValue?: number | null;
+  maxValue?: number | null;
+  batteryTypeId: number;
 }
 
 export interface BatteryTypeDto {
+  id: number;
   name: string;
-  molds: string[];
-  standards: Record<string, string>;
+  standards: BatteryStandardDto[];
 }
 
+export interface LineDto { id: number; name: string; }
+export interface ShiftDto { id: number; name: string; code: string; start: string; end: string; }
+export interface MoldDto { code: string; description: string; }
+
+// ── Check Items ──
 export interface SubRowDto {
   id: number;
   suffix: string;
@@ -64,6 +91,7 @@ export interface CheckItemDto {
   subRows?: SubRowDto[];
 }
 
+// ── Form Definition ──
 export interface FormProblemColumnDto {
   id: number;
   formId: number;
@@ -105,15 +133,16 @@ export interface FormDefinitionListDto {
   createdAt: string;
 }
 
+// ── Form Submission ──
 export interface FormSubmissionPayload {
   formId: number;
   tanggal: string;
-  line: number;
-  shift: number;
-  operatorId: number;
-  leaderId?: number | null;
-  kasubsieId?: number | null;
-  kasieId?: number | null;
+  lineId: number | null;
+  shiftId: number | null;
+  operatorEmpId: string | null;
+  leaderEmpId?: string | null;
+  kasubsieEmpId?: string | null;
+  kasieEmpId?: string | null;
   batterySlotsJson?: string | null;
   checkValues: { settingKey: string; value: string | null }[];
   problems: { sortOrder: number; valuesJson: string }[];
@@ -124,9 +153,9 @@ export interface FormSubmissionListDto {
   id: number;
   formId: number;
   tanggal: string;
-  line: number;
-  shift: number;
-  operatorId: number;
+  lineId: number | null;
+  shiftId: number | null;
+  operatorEmpId: string | null;
   operatorName?: string;
   formCode?: string;
   formTitle?: string;
@@ -137,48 +166,48 @@ export interface FormSubmissionDetailDto {
   id: number;
   formId: number;
   tanggal: string;
-  line: number;
-  shift: number;
-  operatorId: number;
-  leaderId?: number;
-  kasubsieId?: number;
-  kasieId?: number;
+  lineId: number | null;
+  shiftId: number | null;
+  operatorEmpId: string | null;
+  leaderEmpId?: string | null;
+  kasubsieEmpId?: string | null;
+  kasieEmpId?: string | null;
+  operatorName?: string;
+  leaderName?: string;
+  kasubsieName?: string;
+  kasieName?: string;
   batterySlotsJson?: string;
-  operator?: { id: number; name: string };
-  leader?: { id: number; name: string };
-  kasubsie?: { id: number; name: string };
-  kasie?: { id: number; name: string };
-  form?: FormDefinitionListDto;
+  createdAt: string;
+  form?: { id: number; code: string; title: string; subtitle: string };
   checkValues: { id: number; settingKey: string; value: string }[];
   problems: { id: number; sortOrder: number; valuesJson: string }[];
   signatures: { id: number; roleKey: string; signatureData: string }[];
 }
 
-export interface BatteryStandardDto {
+// ── Admin types ──
+export interface AdminBatteryTypeDto {
   id: number;
-  paramKey: string;
-  value: string;
-  minValue?: number | null;
-  maxValue?: number | null;
-  batteryTypeId: number;
+  name: string;
+  standards: BatteryStandardDto[];
 }
 
 // ══════════════════════════════════════════════════
 // API FUNCTIONS
 // ══════════════════════════════════════════════════
 
-// ── Personnel ──
+// ── Personnel (read-only, from master data) ──
 export const getOperators = () => apiFetch<OperatorDto[]>('/personnel/operators');
 export const getLeaders = () => apiFetch<LeaderDto[]>('/personnel/leaders');
 export const getKasubsies = () => apiFetch<KasubsieDto[]>('/personnel/kasubsies');
 export const getKasies = () => apiFetch<KasieDto[]>('/personnel/kasies');
-export const getHierarchy = (operatorId: number) =>
-  apiFetch<HierarchyDto>(`/personnel/hierarchy/${operatorId}`);
+export const getHierarchy = (empId: string) =>
+  apiFetch<HierarchyDto>(`/personnel/hierarchy/${encodeURIComponent(empId)}`);
 
-// ── Battery ──
+// ── Battery / Line / Shift / Mold ──
 export const getBatteryTypes = () => apiFetch<BatteryTypeDto[]>('/battery/types');
-export const getLines = () => apiFetch<number[]>('/battery/lines');
-export const getShifts = () => apiFetch<number[]>('/battery/shifts');
+export const getLines = () => apiFetch<LineDto[]>('/battery/lines');
+export const getShifts = () => apiFetch<ShiftDto[]>('/battery/shifts');
+export const getMolds = () => apiFetch<MoldDto[]>('/battery/molds');
 
 // ── Check Items ──
 export const getCheckItems = () => apiFetch<CheckItemDto[]>('/checkitem');
@@ -204,7 +233,7 @@ export const submitFormSubmission = (data: FormSubmissionPayload) =>
 export const deleteFormSubmission = (id: number) =>
   apiFetch<void>(`/formsubmission/${id}`, { method: 'DELETE' });
 
-// ── Admin APIs ──
+// ── Admin: Check Items ──
 export const adminGetCheckItems = (formId: number) =>
   apiFetch<CheckItemDto[]>(`/admin/checkitems?formId=${formId}`);
 export const adminCreateCheckItem = (data: Partial<CheckItemDto>) =>
@@ -214,13 +243,7 @@ export const adminUpdateCheckItem = (id: number, data: Partial<CheckItemDto>) =>
 export const adminDeleteCheckItem = (id: number) =>
   apiFetch<void>(`/admin/checkitems/${id}`, { method: 'DELETE' });
 
-// ── Admin: Battery Types / Standards / Molds ──
-export interface AdminBatteryTypeDto {
-  id: number;
-  name: string;
-  molds: { id: number; name: string; batteryTypeId: number }[];
-  standards: BatteryStandardDto[];
-}
+// ── Admin: Battery Types / Standards ──
 export const adminGetBatteryTypes = () =>
   apiFetch<AdminBatteryTypeDto[]>('/admin/batterytypes');
 export const adminCreateBatteryType = (data: { name: string }) =>
@@ -236,13 +259,6 @@ export const adminUpdateBatteryStandard = (id: number, data: Partial<BatteryStan
   apiFetch<BatteryStandardDto>(`/admin/batterystandards/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const adminDeleteBatteryStandard = (id: number) =>
   apiFetch<void>(`/admin/batterystandards/${id}`, { method: 'DELETE' });
-
-export const adminCreateBatteryMold = (data: { name: string; batteryTypeId: number }) =>
-  apiFetch<{ id: number; name: string; batteryTypeId: number }>('/admin/batterymolds', { method: 'POST', body: JSON.stringify(data) });
-export const adminUpdateBatteryMold = (id: number, data: { name: string }) =>
-  apiFetch<{ id: number; name: string }>(`/admin/batterymolds/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-export const adminDeleteBatteryMold = (id: number) =>
-  apiFetch<void>(`/admin/batterymolds/${id}`, { method: 'DELETE' });
 
 // ── Admin: Problem Columns ──
 export const adminGetProblemColumns = (formId: number) =>
@@ -264,34 +280,15 @@ export const adminUpdateSignatureSlot = (id: number, data: Partial<FormSignature
 export const adminDeleteSignatureSlot = (id: number) =>
   apiFetch<void>(`/admin/signatureslots/${id}`, { method: 'DELETE' });
 
-// ── Admin: Personnel CRUD ──
+// ── Admin: Personnel (read-only from master data) ──
 export const adminGetPersonnel = () =>
-  apiFetch<{ kasies: KasieDto[]; kasubsies: KasubsieDto[]; leaders: LeaderDto[]; operators: OperatorDto[] }>('/admin/personnel');
+  apiFetch<{
+    operators: OperatorDto[];
+    leaders: LeaderDto[];
+    kasubsies: KasubsieDto[];
+    kasies: KasieDto[];
+  }>('/admin/personnel');
 
-export const adminCreateOperator = (data: { name: string; leaderId: number }) =>
-  apiFetch<OperatorDto>('/admin/operators', { method: 'POST', body: JSON.stringify(data) });
-export const adminUpdateOperator = (id: number, data: { name: string; leaderId: number }) =>
-  apiFetch<OperatorDto>(`/admin/operators/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-export const adminDeleteOperator = (id: number) =>
-  apiFetch<void>(`/admin/operators/${id}`, { method: 'DELETE' });
-
-export const adminCreateLeader = (data: { name: string; kasubsieId: number }) =>
-  apiFetch<LeaderDto>('/admin/leaders', { method: 'POST', body: JSON.stringify(data) });
-export const adminUpdateLeader = (id: number, data: { name: string; kasubsieId: number }) =>
-  apiFetch<LeaderDto>(`/admin/leaders/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-export const adminDeleteLeader = (id: number) =>
-  apiFetch<void>(`/admin/leaders/${id}`, { method: 'DELETE' });
-
-export const adminCreateKasubsie = (data: { name: string; kasieId: number }) =>
-  apiFetch<KasubsieDto>('/admin/kasubsies', { method: 'POST', body: JSON.stringify(data) });
-export const adminUpdateKasubsie = (id: number, data: { name: string; kasieId: number }) =>
-  apiFetch<KasubsieDto>(`/admin/kasubsies/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-export const adminDeleteKasubsie = (id: number) =>
-  apiFetch<void>(`/admin/kasubsies/${id}`, { method: 'DELETE' });
-
-export const adminCreateKasie = (data: { name: string }) =>
-  apiFetch<KasieDto>('/admin/kasies', { method: 'POST', body: JSON.stringify(data) });
-export const adminUpdateKasie = (id: number, data: { name: string }) =>
-  apiFetch<KasieDto>(`/admin/kasies/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-export const adminDeleteKasie = (id: number) =>
-  apiFetch<void>(`/admin/kasies/${id}`, { method: 'DELETE' });
+// ── Admin: Molds (read-only from master data) ──
+export const adminGetMolds = () =>
+  apiFetch<{ moldCode: string; moldDescription: string; moldStatus: string; idSection: number | null }[]>('/admin/molds');

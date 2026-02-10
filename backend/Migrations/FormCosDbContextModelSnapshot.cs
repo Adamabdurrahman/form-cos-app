@@ -22,125 +22,7 @@ namespace backend.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("backend.Models.BatteryMold", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BatteryTypeId")
-                        .HasColumnType("int")
-                        .HasColumnName("battery_type_id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatteryTypeId");
-
-                    b.ToTable("battery_mold");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BatteryTypeId = 1,
-                            Name = "COS-A01"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BatteryTypeId = 1,
-                            Name = "COS-A02"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            BatteryTypeId = 1,
-                            Name = "COS-A03"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            BatteryTypeId = 2,
-                            Name = "COS-B01"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            BatteryTypeId = 2,
-                            Name = "COS-B02"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            BatteryTypeId = 3,
-                            Name = "COS-C01"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            BatteryTypeId = 3,
-                            Name = "COS-C02"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            BatteryTypeId = 3,
-                            Name = "COS-C03"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            BatteryTypeId = 4,
-                            Name = "COS-D01"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            BatteryTypeId = 4,
-                            Name = "COS-D02"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            BatteryTypeId = 5,
-                            Name = "COS-E01"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            BatteryTypeId = 5,
-                            Name = "COS-E02"
-                        },
-                        new
-                        {
-                            Id = 13,
-                            BatteryTypeId = 5,
-                            Name = "COS-E03"
-                        },
-                        new
-                        {
-                            Id = 14,
-                            BatteryTypeId = 6,
-                            Name = "COS-F01"
-                        },
-                        new
-                        {
-                            Id = 15,
-                            BatteryTypeId = 6,
-                            Name = "COS-F02"
-                        });
-                });
-
-            modelBuilder.Entity("backend.Models.BatteryStandard", b =>
+            modelBuilder.Entity("backend.Models.CosBatteryStandard", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -154,23 +36,23 @@ namespace backend.Migrations
                         .HasColumnName("battery_type_id");
 
                     b.Property<decimal?>("MaxValue")
-                        .HasColumnType("decimal(10,2)")
+                        .HasColumnType("decimal(18,4)")
                         .HasColumnName("max_value");
 
                     b.Property<decimal?>("MinValue")
-                        .HasColumnType("decimal(10,2)")
+                        .HasColumnType("decimal(18,4)")
                         .HasColumnName("min_value");
 
                     b.Property<string>("ParamKey")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("param_key");
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("value");
 
                     b.HasKey("Id");
@@ -178,7 +60,7 @@ namespace backend.Migrations
                     b.HasIndex("BatteryTypeId", "ParamKey")
                         .IsUnique();
 
-                    b.ToTable("battery_standard");
+                    b.ToTable("cos_battery_standards");
 
                     b.HasData(
                         new
@@ -1023,7 +905,7 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.BatteryType", b =>
+            modelBuilder.Entity("backend.Models.CosBatteryType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1031,6 +913,10 @@ namespace backend.Migrations
                         .HasColumnName("id");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("KatId")
+                        .HasColumnType("int")
+                        .HasColumnName("kat_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1040,7 +926,7 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("battery_type");
+                    b.ToTable("cos_battery_types");
 
                     b.HasData(
                         new
@@ -1075,7 +961,7 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.CheckItem", b =>
+            modelBuilder.Entity("backend.Models.CosCheckItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1085,16 +971,16 @@ namespace backend.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ConditionalLabel")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("conditional_label");
 
                     b.Property<decimal?>("FixedMax")
-                        .HasColumnType("decimal(10,2)")
+                        .HasColumnType("decimal(18,4)")
                         .HasColumnName("fixed_max");
 
                     b.Property<decimal?>("FixedMin")
-                        .HasColumnType("decimal(10,2)")
+                        .HasColumnType("decimal(18,4)")
                         .HasColumnName("fixed_min");
 
                     b.Property<string>("FixedStandard")
@@ -1113,24 +999,24 @@ namespace backend.Migrations
 
                     b.Property<string>("ItemKey")
                         .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("varchar(80)")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("item_key");
 
                     b.Property<string>("Keterangan")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
                         .HasColumnName("keterangan");
 
                     b.Property<string>("Label")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
                         .HasColumnName("label");
 
                     b.Property<string>("NumericStdKey")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("numeric_std_key");
 
                     b.Property<int>("SortOrder")
@@ -1139,8 +1025,8 @@ namespace backend.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
                         .HasColumnName("type");
 
                     b.Property<string>("VisualStandard")
@@ -1153,7 +1039,7 @@ namespace backend.Migrations
                     b.HasIndex("FormId", "ItemKey")
                         .IsUnique();
 
-                    b.ToTable("check_item");
+                    b.ToTable("cos_check_items");
 
                     b.HasData(
                         new
@@ -1514,7 +1400,7 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.CheckSubRow", b =>
+            modelBuilder.Entity("backend.Models.CosCheckSubRow", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1528,11 +1414,11 @@ namespace backend.Migrations
                         .HasColumnName("check_item_id");
 
                     b.Property<decimal?>("FixedMax")
-                        .HasColumnType("decimal(10,2)")
+                        .HasColumnType("decimal(18,4)")
                         .HasColumnName("fixed_max");
 
                     b.Property<decimal?>("FixedMin")
-                        .HasColumnType("decimal(10,2)")
+                        .HasColumnType("decimal(18,4)")
                         .HasColumnName("fixed_min");
 
                     b.Property<string>("FixedStandard")
@@ -1542,8 +1428,8 @@ namespace backend.Migrations
 
                     b.Property<string>("Label")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
                         .HasColumnName("label");
 
                     b.Property<int>("SortOrder")
@@ -1560,7 +1446,7 @@ namespace backend.Migrations
 
                     b.HasIndex("CheckItemId");
 
-                    b.ToTable("check_sub_row");
+                    b.ToTable("cos_check_sub_rows");
 
                     b.HasData(
                         new
@@ -1705,7 +1591,39 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.FormDefinition", b =>
+            modelBuilder.Entity("backend.Models.CosCheckValue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("SettingKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("setting_key");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int")
+                        .HasColumnName("submission_id");
+
+                    b.Property<string>("Value")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId", "SettingKey")
+                        .IsUnique();
+
+                    b.ToTable("cos_check_values");
+                });
+
+            modelBuilder.Entity("backend.Models.CosFormDefinition", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1724,17 +1642,31 @@ namespace backend.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("DocNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("doc_number");
+
+                    b.Property<DateTime?>("EffectiveDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("effective_date");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("is_active");
+
+                    b.Property<string>("Revision")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("revision");
 
                     b.Property<int>("SlotCount")
                         .HasColumnType("int")
                         .HasColumnName("slot_count");
 
                     b.Property<string>("Subtitle")
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar(200)")
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)")
                         .HasColumnName("subtitle");
 
                     b.Property<string>("Title")
@@ -1752,7 +1684,7 @@ namespace backend.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("form_definition");
+                    b.ToTable("cos_form_definitions");
 
                     b.HasData(
                         new
@@ -1767,7 +1699,35 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.FormProblemColumn", b =>
+            modelBuilder.Entity("backend.Models.CosProblem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int")
+                        .HasColumnName("submission_id");
+
+                    b.Property<string>("ValuesJson")
+                        .HasColumnType("text")
+                        .HasColumnName("values_json");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("cos_problems");
+                });
+
+            modelBuilder.Entity("backend.Models.CosProblemColumn", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1784,8 +1744,8 @@ namespace backend.Migrations
 
                     b.Property<string>("FieldType")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
                         .HasColumnName("field_type");
 
                     b.Property<int>("FormId")
@@ -1803,6 +1763,7 @@ namespace backend.Migrations
                         .HasColumnName("sort_order");
 
                     b.Property<string>("Width")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
                         .HasColumnName("width");
@@ -1811,7 +1772,7 @@ namespace backend.Migrations
 
                     b.HasIndex("FormId");
 
-                    b.ToTable("form_problem_column");
+                    b.ToTable("cos_problem_columns");
 
                     b.HasData(
                         new
@@ -1876,7 +1837,38 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.FormSignatureSlot", b =>
+            modelBuilder.Entity("backend.Models.CosSignatureEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("RoleKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("role_key");
+
+                    b.Property<string>("SignatureData")
+                        .HasColumnType("mediumtext")
+                        .HasColumnName("signature_data");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int")
+                        .HasColumnName("submission_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId", "RoleKey")
+                        .IsUnique();
+
+                    b.ToTable("cos_signature_entries");
+                });
+
+            modelBuilder.Entity("backend.Models.CosSignatureSlot", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1891,14 +1883,14 @@ namespace backend.Migrations
 
                     b.Property<string>("Label")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("label");
 
                     b.Property<string>("RoleKey")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("varchar(30)")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
                         .HasColumnName("role_key");
 
                     b.Property<int>("SortOrder")
@@ -1909,7 +1901,7 @@ namespace backend.Migrations
 
                     b.HasIndex("FormId");
 
-                    b.ToTable("form_signature_slot");
+                    b.ToTable("cos_signature_slots");
 
                     b.HasData(
                         new
@@ -1946,7 +1938,7 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.FormSubmission", b =>
+            modelBuilder.Entity("backend.Models.CosSubmission", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1956,7 +1948,7 @@ namespace backend.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("BatterySlotsJson")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("battery_slots_json");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1967,29 +1959,33 @@ namespace backend.Migrations
                         .HasColumnType("int")
                         .HasColumnName("form_id");
 
-                    b.Property<int?>("KasieId")
-                        .HasColumnType("int")
-                        .HasColumnName("kasie_id");
+                    b.Property<string>("KasieEmpId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("kasie_emp_id");
 
-                    b.Property<int?>("KasubsieId")
-                        .HasColumnType("int")
-                        .HasColumnName("kasubsie_id");
+                    b.Property<string>("KasubsieEmpId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("kasubsie_emp_id");
 
-                    b.Property<int?>("LeaderId")
-                        .HasColumnType("int")
-                        .HasColumnName("leader_id");
+                    b.Property<string>("LeaderEmpId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("leader_emp_id");
 
-                    b.Property<int>("Line")
+                    b.Property<int?>("LineId")
                         .HasColumnType("int")
-                        .HasColumnName("line");
+                        .HasColumnName("line_id");
 
-                    b.Property<int>("OperatorId")
-                        .HasColumnType("int")
-                        .HasColumnName("operator_id");
+                    b.Property<string>("OperatorEmpId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("operator_emp_id");
 
-                    b.Property<int>("Shift")
+                    b.Property<int?>("ShiftId")
                         .HasColumnType("int")
-                        .HasColumnName("shift");
+                        .HasColumnName("shift_id");
 
                     b.Property<DateTime>("Tanggal")
                         .HasColumnType("datetime(6)")
@@ -2003,224 +1999,699 @@ namespace backend.Migrations
 
                     b.HasIndex("FormId");
 
-                    b.HasIndex("KasieId");
-
-                    b.HasIndex("KasubsieId");
-
-                    b.HasIndex("LeaderId");
-
-                    b.HasIndex("OperatorId");
-
-                    b.ToTable("form_submission");
+                    b.ToTable("cos_submissions");
                 });
 
-            modelBuilder.Entity("backend.Models.Kasie", b =>
+            modelBuilder.Entity("backend.Models.TlkpDepartemen", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("DepId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("id");
+                        .HasColumnName("dep_id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DepId"));
 
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<string>("DepHead")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("dep_head");
+
+                    b.Property<string>("DepInitial")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("dep_initial");
+
+                    b.Property<string>("DepKode")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("dep_kode");
+
+                    b.Property<string>("DepName")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
-                        .HasColumnName("name");
+                        .HasColumnName("dep_name");
 
-                    b.HasKey("Id");
+                    b.Property<int?>("DepStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("dep_status");
 
-                    b.ToTable("kasie");
+                    b.Property<string>("DivId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("div_id");
+
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.Property<int?>("PlantId")
+                        .HasColumnType("int")
+                        .HasColumnName("plant_id");
+
+                    b.HasKey("DepId");
+
+                    b.ToTable("tlkp_departemen");
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpDivisi", b =>
+                {
+                    b.Property<int>("DivId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("div_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DivId"));
+
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<string>("DivHead")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("div_head");
+
+                    b.Property<string>("DivInitial")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("div_initial");
+
+                    b.Property<string>("DivKode")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("div_kode");
+
+                    b.Property<string>("DivName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("div_name");
+
+                    b.Property<int?>("DivStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("div_status");
+
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.Property<int?>("PlantId")
+                        .HasColumnType("int")
+                        .HasColumnName("plant_id");
+
+                    b.HasKey("DivId");
+
+                    b.ToTable("tlkp_divisi");
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpGroup", b =>
+                {
+                    b.Property<int>("GroupId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("group_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("GroupId"));
+
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<string>("GroupName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("group_name");
+
+                    b.Property<int?>("GroupStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("group_status");
+
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.HasKey("GroupId");
+
+                    b.ToTable("tlkp_group");
 
                     b.HasData(
                         new
                         {
-                            Id = 1,
-                            Name = "Kurniawan Adi"
+                            GroupId = 1,
+                            GroupName = "Group A",
+                            GroupStatus = 1
                         },
                         new
                         {
-                            Id = 2,
-                            Name = "Sutrisno Hadi"
+                            GroupId = 2,
+                            GroupName = "Group B",
+                            GroupStatus = 1
+                        },
+                        new
+                        {
+                            GroupId = 3,
+                            GroupName = "Group C",
+                            GroupStatus = 1
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.Kasubsie", b =>
+            modelBuilder.Entity("backend.Models.TlkpItem", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("KasieId")
-                        .HasColumnType("int")
-                        .HasColumnName("kasie_id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<string>("ItemNum")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
-                        .HasColumnName("name");
+                        .HasColumnName("item_num");
 
-                    b.HasKey("Id");
+                    b.Property<int>("KatId")
+                        .HasColumnType("int")
+                        .HasColumnName("kat_id");
 
-                    b.HasIndex("KasieId");
+                    b.Property<string>("CreaBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("creaby");
 
-                    b.ToTable("kasubsie");
+                    b.Property<DateTime?>("CreaDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("creadate");
+
+                    b.Property<int?>("ItemAsam")
+                        .HasColumnType("int")
+                        .HasColumnName("item_asam");
+
+                    b.Property<string>("ItemDesc")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("item_desc");
+
+                    b.Property<string>("ItemDs")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("item_ds");
+
+                    b.Property<string>("ItemKeterangan")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("item_keterangan");
+
+                    b.Property<int?>("ItemLot")
+                        .HasColumnType("int")
+                        .HasColumnName("item_lot");
+
+                    b.Property<string>("ItemNa")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("item_na");
+
+                    b.Property<int?>("ItemStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("item_status");
+
+                    b.Property<DateTime?>("ItemTgl")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("item_tgl");
+
+                    b.Property<string>("ModiBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modiby");
+
+                    b.Property<DateTime?>("ModiDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modidate");
+
+                    b.Property<int?>("SeriesId")
+                        .HasColumnType("int")
+                        .HasColumnName("series_id");
+
+                    b.HasKey("ItemNum", "KatId");
+
+                    b.ToTable("tlkp_item");
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpJob", b =>
+                {
+                    b.Property<int>("JoprId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("jopr_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("JoprId"));
+
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<string>("JoprAlias")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("jopr_alias");
+
+                    b.Property<string>("JoprName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("jopr_name");
+
+                    b.Property<int?>("JoprStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("jopr_status");
+
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.Property<int?>("SecId")
+                        .HasColumnType("int")
+                        .HasColumnName("sec_id");
+
+                    b.Property<int?>("UserKasieId")
+                        .HasColumnType("int")
+                        .HasColumnName("userKasie_id");
+
+                    b.HasKey("JoprId");
+
+                    b.ToTable("tlkp_job");
 
                     b.HasData(
                         new
                         {
-                            Id = 1,
-                            KasieId = 1,
-                            Name = "Joko Prasetyo"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            KasieId = 1,
-                            Name = "Mulyono Slamet"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            KasieId = 2,
-                            Name = "Teguh Wibowo"
+                            JoprId = 1,
+                            JoprName = "Operator COS",
+                            JoprStatus = 1,
+                            SecId = 1
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.Leader", b =>
+            modelBuilder.Entity("backend.Models.TlkpKategori", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("KatId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("id");
+                        .HasColumnName("kat_id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("KatId"));
 
-                    b.Property<int>("KasubsieId")
-                        .HasColumnType("int")
-                        .HasColumnName("kasubsie_id");
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<string>("ItemPch")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("item_pch");
+
+                    b.Property<string>("KatName")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
-                        .HasColumnName("name");
+                        .HasColumnName("kat_name");
 
-                    b.HasKey("Id");
+                    b.Property<int?>("KatPlant")
+                        .HasColumnType("int")
+                        .HasColumnName("kat_plant");
 
-                    b.HasIndex("KasubsieId");
+                    b.Property<int?>("KatStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("kat_status");
 
-                    b.ToTable("leader");
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.HasKey("KatId");
+
+                    b.ToTable("tlkp_kategori");
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpLine", b =>
+                {
+                    b.Property<int>("LineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("line_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LineId"));
+
+                    b.Property<string>("CreaBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("crea_by");
+
+                    b.Property<DateTime?>("CreaDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("crea_date");
+
+                    b.Property<string>("LineKet")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("line_ket");
+
+                    b.Property<string>("LineName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("line_name");
+
+                    b.Property<int?>("LinePlant")
+                        .HasColumnType("int")
+                        .HasColumnName("line_plant");
+
+                    b.Property<int?>("LineStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("line_status");
+
+                    b.Property<string>("ModiBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modi_by");
+
+                    b.Property<DateTime?>("ModiDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modi_date");
+
+                    b.Property<int?>("SecId")
+                        .HasColumnType("int")
+                        .HasColumnName("sec_id");
+
+                    b.Property<int?>("UserKasieId")
+                        .HasColumnType("int")
+                        .HasColumnName("userKasie_id");
+
+                    b.Property<string>("WorkCenter")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("work_center");
+
+                    b.HasKey("LineId");
+
+                    b.ToTable("tlkp_line");
 
                     b.HasData(
                         new
                         {
-                            Id = 1,
-                            KasubsieId = 1,
-                            Name = "Hendra Wijaya"
+                            LineId = 2,
+                            LineName = "Line 2",
+                            LineStatus = 1,
+                            SecId = 1
                         },
                         new
                         {
-                            Id = 2,
-                            KasubsieId = 1,
-                            Name = "Irfan Hakim"
+                            LineId = 3,
+                            LineName = "Line 3",
+                            LineStatus = 1,
+                            SecId = 1
                         },
                         new
                         {
-                            Id = 3,
-                            KasubsieId = 2,
-                            Name = "Fajar Nugroho"
+                            LineId = 4,
+                            LineName = "Line 4",
+                            LineStatus = 1,
+                            SecId = 1
                         },
                         new
                         {
-                            Id = 4,
-                            KasubsieId = 3,
-                            Name = "Dedi Kurniawan"
+                            LineId = 5,
+                            LineName = "Line 5",
+                            LineStatus = 1,
+                            SecId = 1
+                        },
+                        new
+                        {
+                            LineId = 6,
+                            LineName = "Line 6",
+                            LineStatus = 1,
+                            SecId = 1
+                        },
+                        new
+                        {
+                            LineId = 7,
+                            LineName = "Line 7",
+                            LineStatus = 1,
+                            SecId = 1
+                        },
+                        new
+                        {
+                            LineId = 8,
+                            LineName = "Line 8",
+                            LineStatus = 1,
+                            SecId = 1
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.Operator", b =>
+            modelBuilder.Entity("backend.Models.TlkpLineGroup", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("LgpId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("id");
+                        .HasColumnName("lgp_id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("LgpId"));
 
-                    b.Property<int>("LeaderId")
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<int?>("GroupId")
                         .HasColumnType("int")
-                        .HasColumnName("leader_id");
+                        .HasColumnName("group_id");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("name");
+                    b.Property<string>("LgpKasubsie")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("lgp_kasubsie");
 
-                    b.HasKey("Id");
+                    b.Property<string>("LgpLeader")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("lgp_leader");
 
-                    b.HasIndex("LeaderId");
+                    b.Property<int?>("LgpPlant")
+                        .HasColumnType("int")
+                        .HasColumnName("lgp_plant");
 
-                    b.ToTable("operator");
+                    b.Property<int?>("LgpStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("lgp_status");
+
+                    b.Property<int?>("LineId")
+                        .HasColumnType("int")
+                        .HasColumnName("line_id");
+
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.Property<int?>("UserKasieId")
+                        .HasColumnType("int")
+                        .HasColumnName("userKasie_id");
+
+                    b.HasKey("LgpId");
+
+                    b.ToTable("tlkp_lineGroup");
 
                     b.HasData(
                         new
                         {
-                            Id = 1,
-                            LeaderId = 1,
-                            Name = "Ahmad Rizky"
+                            LgpId = 1,
+                            GroupId = 1,
+                            LgpKasubsie = "EMP-KASUBSIE-001",
+                            LgpLeader = "EMP-LEADER-001",
+                            LgpStatus = 1,
+                            LineId = 2,
+                            UserKasieId = 1
                         },
                         new
                         {
-                            Id = 2,
-                            LeaderId = 1,
-                            Name = "Budi Santoso"
+                            LgpId = 2,
+                            GroupId = 1,
+                            LgpKasubsie = "EMP-KASUBSIE-001",
+                            LgpLeader = "EMP-LEADER-001",
+                            LgpStatus = 1,
+                            LineId = 3,
+                            UserKasieId = 1
                         },
                         new
                         {
-                            Id = 3,
-                            LeaderId = 2,
-                            Name = "Cahya Dewi"
+                            LgpId = 3,
+                            GroupId = 2,
+                            LgpKasubsie = "EMP-KASUBSIE-001",
+                            LgpLeader = "EMP-LEADER-002",
+                            LgpStatus = 1,
+                            LineId = 4,
+                            UserKasieId = 1
                         },
                         new
                         {
-                            Id = 4,
-                            LeaderId = 2,
-                            Name = "Dian Permata"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            LeaderId = 3,
-                            Name = "Eko Prasetyo"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            LeaderId = 3,
-                            Name = "Faisal Rahman"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            LeaderId = 4,
-                            Name = "Gunawan Putra"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            LeaderId = 4,
-                            Name = "Haris Munandar"
+                            LgpId = 4,
+                            GroupId = 2,
+                            LgpKasubsie = "EMP-KASUBSIE-001",
+                            LgpLeader = "EMP-LEADER-002",
+                            LgpStatus = 1,
+                            LineId = 5,
+                            UserKasieId = 1
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.SubmissionCheckValue", b =>
+            modelBuilder.Entity("backend.Models.TlkpMold", b =>
+                {
+                    b.Property<string>("MoldCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("mold_code");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_date");
+
+                    b.Property<int?>("IdSection")
+                        .HasColumnType("int")
+                        .HasColumnName("id_section");
+
+                    b.Property<string>("ItemNum")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("item_num");
+
+                    b.Property<string>("ModifBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modif_by");
+
+                    b.Property<DateTime?>("ModifDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modif_date");
+
+                    b.Property<string>("MoldDescription")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("mold_description");
+
+                    b.Property<string>("MoldStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("mold_status");
+
+                    b.Property<string>("MoldSts")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("mold_sts");
+
+                    b.HasKey("MoldCode");
+
+                    b.ToTable("tlkp_mold");
+
+                    b.HasData(
+                        new
+                        {
+                            MoldCode = "COS-A01",
+                            IdSection = 1,
+                            MoldDescription = "Mold COS A01",
+                            MoldStatus = "1"
+                        },
+                        new
+                        {
+                            MoldCode = "COS-A02",
+                            IdSection = 1,
+                            MoldDescription = "Mold COS A02",
+                            MoldStatus = "1"
+                        },
+                        new
+                        {
+                            MoldCode = "COS-B01",
+                            IdSection = 1,
+                            MoldDescription = "Mold COS B01",
+                            MoldStatus = "1"
+                        },
+                        new
+                        {
+                            MoldCode = "COS-B02",
+                            IdSection = 1,
+                            MoldDescription = "Mold COS B02",
+                            MoldStatus = "1"
+                        },
+                        new
+                        {
+                            MoldCode = "COS-C01",
+                            IdSection = 1,
+                            MoldDescription = "Mold COS C01",
+                            MoldStatus = "1"
+                        },
+                        new
+                        {
+                            MoldCode = "COS-C02",
+                            IdSection = 1,
+                            MoldDescription = "Mold COS C02",
+                            MoldStatus = "1"
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpMoldType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -2229,102 +2700,655 @@ namespace backend.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("SettingKey")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("varchar(120)")
-                        .HasColumnName("setting_key");
+                    b.Property<string>("MtCreateBy")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("mt_createBy");
 
-                    b.Property<int>("SubmissionId")
+                    b.Property<DateTime?>("MtCreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("mt_createDate");
+
+                    b.Property<string>("MtModifBy")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("mt_modifBy");
+
+                    b.Property<DateTime?>("MtModifDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("mt_modifDate");
+
+                    b.Property<string>("MtName")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("mt_name");
+
+                    b.Property<int?>("MtPlant")
                         .HasColumnType("int")
-                        .HasColumnName("submission_id");
+                        .HasColumnName("mt_plant");
 
-                    b.Property<string>("Value")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("value");
+                    b.Property<int?>("MtStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("mt_status");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SubmissionId", "SettingKey")
-                        .IsUnique();
-
-                    b.ToTable("submission_check_value");
+                    b.ToTable("tlkp_moldtype");
                 });
 
-            modelBuilder.Entity("backend.Models.SubmissionProblem", b =>
+            modelBuilder.Entity("backend.Models.TlkpOperator", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<string>("UserId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("JoprId")
+                        .HasColumnType("int")
+                        .HasColumnName("jopr_id");
+
+                    b.Property<int?>("GroupId")
+                        .HasColumnType("int")
+                        .HasColumnName("group_id");
+
+                    b.Property<string>("Klasifikasi")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("klasifikasi");
+
+                    b.Property<int?>("LgpId")
+                        .HasColumnType("int")
+                        .HasColumnName("lgp_id");
+
+                    b.Property<DateTime?>("UpdateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("update_date");
+
+                    b.Property<int?>("UserKasieId")
+                        .HasColumnType("int")
+                        .HasColumnName("userKasie_id");
+
+                    b.HasKey("UserId", "JoprId");
+
+                    b.ToTable("tlkp_operator");
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = "EMP-OPR-001",
+                            JoprId = 1,
+                            GroupId = 1,
+                            LgpId = 1,
+                            UserKasieId = 1
+                        },
+                        new
+                        {
+                            UserId = "EMP-OPR-002",
+                            JoprId = 1,
+                            GroupId = 1,
+                            LgpId = 1,
+                            UserKasieId = 1
+                        },
+                        new
+                        {
+                            UserId = "EMP-OPR-003",
+                            JoprId = 1,
+                            GroupId = 1,
+                            LgpId = 2,
+                            UserKasieId = 1
+                        },
+                        new
+                        {
+                            UserId = "EMP-OPR-004",
+                            JoprId = 1,
+                            GroupId = 2,
+                            LgpId = 3,
+                            UserKasieId = 1
+                        },
+                        new
+                        {
+                            UserId = "EMP-OPR-005",
+                            JoprId = 1,
+                            GroupId = 2,
+                            LgpId = 3,
+                            UserKasieId = 1
+                        },
+                        new
+                        {
+                            UserId = "EMP-OPR-006",
+                            JoprId = 1,
+                            GroupId = 2,
+                            LgpId = 4,
+                            UserKasieId = 1
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpPlant", b =>
+                {
+                    b.Property<int>("PlantId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("id");
+                        .HasColumnName("plant_id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlantId"));
 
-                    b.Property<int>("SortOrder")
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.Property<string>("PlantCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("plant_code");
+
+                    b.Property<string>("PlantName")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("plant_name");
+
+                    b.Property<int?>("PlantStatus")
                         .HasColumnType("int")
-                        .HasColumnName("sort_order");
+                        .HasColumnName("plant_status");
 
-                    b.Property<int>("SubmissionId")
+                    b.HasKey("PlantId");
+
+                    b.ToTable("tlkp_plant");
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpSection", b =>
+                {
+                    b.Property<int>("SecId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("submission_id");
+                        .HasColumnName("sec_id");
 
-                    b.Property<string>("ValuesJson")
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SecId"));
+
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("create_by");
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<int?>("DepId")
+                        .HasColumnType("int")
+                        .HasColumnName("dep_id");
+
+                    b.Property<string>("ModifyBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modify_by");
+
+                    b.Property<DateTime?>("ModifyDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modify_date");
+
+                    b.Property<string>("SecHead")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("sec_head");
+
+                    b.Property<string>("SecKode")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("sec_kode");
+
+                    b.Property<string>("SecName")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("sec_name");
+
+                    b.Property<int?>("SecPlant")
+                        .HasColumnType("int")
+                        .HasColumnName("sec_plant");
+
+                    b.Property<int?>("SecStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("sec_status");
+
+                    b.HasKey("SecId");
+
+                    b.ToTable("tlkp_section");
+
+                    b.HasData(
+                        new
+                        {
+                            SecId = 1,
+                            DepId = 1,
+                            SecKode = "COS",
+                            SecName = "COS Section",
+                            SecStatus = 1
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpSeries", b =>
+                {
+                    b.Property<int>("SeriesId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("series_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SeriesId"));
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_date");
+
+                    b.Property<string>("ModifBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("modif_by");
+
+                    b.Property<DateTime?>("ModifDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("modif_date");
+
+                    b.Property<string>("SeriesName")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("series_name");
+
+                    b.Property<int?>("SeriesPlant")
+                        .HasColumnType("int")
+                        .HasColumnName("series_plant");
+
+                    b.Property<int?>("SeriesStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("series_status");
+
+                    b.HasKey("SeriesId");
+
+                    b.ToTable("tlkp_series");
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpShift", b =>
+                {
+                    b.Property<int>("ShiftId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("shift_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ShiftId"));
+
+                    b.Property<string>("ShiftCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("shift_code");
+
+                    b.Property<TimeSpan?>("ShiftEnd")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("shift_end");
+
+                    b.Property<string>("ShiftName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("shift_name");
+
+                    b.Property<string>("ShiftPlan")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("shift_plan");
+
+                    b.Property<TimeSpan?>("ShiftStart")
+                        .HasColumnType("time(6)")
+                        .HasColumnName("shift_start");
+
+                    b.Property<int?>("ShiftStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("shift_status");
+
+                    b.HasKey("ShiftId");
+
+                    b.ToTable("tlkp_shift");
+
+                    b.HasData(
+                        new
+                        {
+                            ShiftId = 1,
+                            ShiftCode = "S1",
+                            ShiftEnd = new TimeSpan(0, 15, 0, 0, 0),
+                            ShiftName = "Shift 1",
+                            ShiftStart = new TimeSpan(0, 7, 0, 0, 0),
+                            ShiftStatus = 1
+                        },
+                        new
+                        {
+                            ShiftId = 2,
+                            ShiftCode = "S2",
+                            ShiftEnd = new TimeSpan(0, 23, 0, 0, 0),
+                            ShiftName = "Shift 2",
+                            ShiftStart = new TimeSpan(0, 15, 0, 0, 0),
+                            ShiftStatus = 1
+                        },
+                        new
+                        {
+                            ShiftId = 3,
+                            ShiftCode = "S3",
+                            ShiftEnd = new TimeSpan(0, 7, 0, 0, 0),
+                            ShiftName = "Shift 3",
+                            ShiftStart = new TimeSpan(0, 23, 0, 0, 0),
+                            ShiftStatus = 1
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpUser", b =>
+                {
+                    b.Property<string>("UserNpk")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("user_npk");
+
+                    b.Property<string>("DeptId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("dept_id");
+
+                    b.Property<string>("EmpId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("emp_id");
+
+                    b.Property<string>("UserCreateBy")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("user_createBy");
+
+                    b.Property<DateTime?>("UserCreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("user_createDate");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("user_email");
+
+                    b.Property<DateTime?>("UserLastLogin")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("user_lastLogin");
+
+                    b.Property<string>("UserModifBy")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)")
+                        .HasColumnName("user_modifBy");
+
+                    b.Property<DateTime?>("UserModifDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("user_modifDate");
+
+                    b.Property<string>("UserNama")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("user_nama");
+
+                    b.Property<string>("UserNamaFull")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("user_namafull");
+
+                    b.Property<string>("UserPass")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("user_pass");
+
+                    b.Property<int?>("UserPlant")
+                        .HasColumnType("int")
+                        .HasColumnName("user_plant");
+
+                    b.Property<string>("UserRole")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("user_role");
+
+                    b.Property<int?>("UserStatus")
+                        .HasColumnType("int")
+                        .HasColumnName("user_status");
+
+                    b.HasKey("UserNpk");
+
+                    b.ToTable("tlkp_user");
+                });
+
+            modelBuilder.Entity("backend.Models.TlkpUserKasie", b =>
+                {
+                    b.Property<int>("UserKasieId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("userKasie_id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UserKasieId"));
+
+                    b.Property<DateTime?>("CreateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("create_date");
+
+                    b.Property<string>("KasieEmpId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("kasie_emp_id");
+
+                    b.Property<int>("SecId")
+                        .HasColumnType("int")
+                        .HasColumnName("sec_id");
+
+                    b.HasKey("UserKasieId");
+
+                    b.ToTable("tlkp_userKasie");
+
+                    b.HasData(
+                        new
+                        {
+                            UserKasieId = 1,
+                            KasieEmpId = "EMP-KASIE-001",
+                            SecId = 1
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.ViewDataAuth", b =>
+                {
+                    b.Property<long>("IdRecnum")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id_recnum");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("IdRecnum"));
+
+                    b.Property<int?>("CompanyId")
+                        .HasColumnType("int")
+                        .HasColumnName("company_id");
+
+                    b.Property<int?>("DeptId")
+                        .HasColumnType("int")
+                        .HasColumnName("dept_id");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("EmpId")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("emp_id");
+
+                    b.Property<string>("EmpNo")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("emp_no");
+
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("first_name");
+
+                    b.Property<string>("FullName")
+                        .HasMaxLength(302)
+                        .HasColumnType("varchar(302)")
+                        .HasColumnName("Full_Name");
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("PosNameId")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("pos_name_id");
+
+                    b.Property<int?>("PositionId")
+                        .HasColumnType("int")
+                        .HasColumnName("position_id");
+
+                    b.Property<byte?>("Status")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("status");
+
+                    b.HasKey("IdRecnum");
+
+                    b.ToTable("VIEW_DATAAUTH");
+
+                    b.HasData(
+                        new
+                        {
+                            IdRecnum = 1L,
+                            EmpId = "EMP-OPR-001",
+                            EmpNo = "1001",
+                            FullName = "Ahmad Rizky",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 2L,
+                            EmpId = "EMP-OPR-002",
+                            EmpNo = "1002",
+                            FullName = "Budi Santoso",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 3L,
+                            EmpId = "EMP-OPR-003",
+                            EmpNo = "1003",
+                            FullName = "Cahya Dewi",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 4L,
+                            EmpId = "EMP-OPR-004",
+                            EmpNo = "1004",
+                            FullName = "Dian Permata",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 5L,
+                            EmpId = "EMP-OPR-005",
+                            EmpNo = "1005",
+                            FullName = "Eko Prasetyo",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 6L,
+                            EmpId = "EMP-OPR-006",
+                            EmpNo = "1006",
+                            FullName = "Faisal Rahman",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 7L,
+                            EmpId = "EMP-LEADER-001",
+                            EmpNo = "2001",
+                            FullName = "Hendra Wijaya",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 8L,
+                            EmpId = "EMP-LEADER-002",
+                            EmpNo = "2002",
+                            FullName = "Irfan Hakim",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 9L,
+                            EmpId = "EMP-KASUBSIE-001",
+                            EmpNo = "3001",
+                            FullName = "Joko Prasetyo",
+                            Status = (byte)1
+                        },
+                        new
+                        {
+                            IdRecnum = 10L,
+                            EmpId = "EMP-KASIE-001",
+                            EmpNo = "4001",
+                            FullName = "Kurniawan Adi",
+                            Status = (byte)1
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.ViewEmployee", b =>
+                {
+                    b.Property<string>("Dep")
                         .HasColumnType("longtext")
-                        .HasColumnName("values_json");
+                        .HasColumnName("dep");
 
-                    b.HasKey("Id");
+                    b.Property<long?>("DepId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("dep_id");
 
-                    b.HasIndex("SubmissionId");
-
-                    b.ToTable("submission_problem");
-                });
-
-            modelBuilder.Entity("backend.Models.SubmissionSignature", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("RoleKey")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("varchar(30)")
-                        .HasColumnName("role_key");
-
-                    b.Property<string>("SignatureData")
+                    b.Property<string>("EmpId")
                         .HasColumnType("longtext")
-                        .HasColumnName("signature_data");
+                        .HasColumnName("emp_id");
 
-                    b.Property<int>("SubmissionId")
-                        .HasColumnType("int")
-                        .HasColumnName("submission_id");
+                    b.Property<string>("Npk")
+                        .HasColumnType("longtext")
+                        .HasColumnName("npk");
 
-                    b.HasKey("Id");
+                    b.Property<string>("Plant")
+                        .HasColumnType("longtext")
+                        .HasColumnName("plant");
 
-                    b.HasIndex("SubmissionId", "RoleKey")
-                        .IsUnique();
+                    b.Property<string>("Sec")
+                        .HasColumnType("longtext")
+                        .HasColumnName("sec");
 
-                    b.ToTable("submission_signature");
+                    b.Property<long?>("SecId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sec_id");
+
+                    b.ToTable("VIEW_EMPLOYEE");
                 });
 
-            modelBuilder.Entity("backend.Models.BatteryMold", b =>
+            modelBuilder.Entity("backend.Models.CosBatteryStandard", b =>
                 {
-                    b.HasOne("backend.Models.BatteryType", "BatteryType")
-                        .WithMany("Molds")
-                        .HasForeignKey("BatteryTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BatteryType");
-                });
-
-            modelBuilder.Entity("backend.Models.BatteryStandard", b =>
-                {
-                    b.HasOne("backend.Models.BatteryType", "BatteryType")
+                    b.HasOne("backend.Models.CosBatteryType", "BatteryType")
                         .WithMany("Standards")
                         .HasForeignKey("BatteryTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2333,9 +3357,9 @@ namespace backend.Migrations
                     b.Navigation("BatteryType");
                 });
 
-            modelBuilder.Entity("backend.Models.CheckItem", b =>
+            modelBuilder.Entity("backend.Models.CosCheckItem", b =>
                 {
-                    b.HasOne("backend.Models.FormDefinition", "Form")
+                    b.HasOne("backend.Models.CosFormDefinition", "Form")
                         .WithMany("CheckItems")
                         .HasForeignKey("FormId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2344,9 +3368,9 @@ namespace backend.Migrations
                     b.Navigation("Form");
                 });
 
-            modelBuilder.Entity("backend.Models.CheckSubRow", b =>
+            modelBuilder.Entity("backend.Models.CosCheckSubRow", b =>
                 {
-                    b.HasOne("backend.Models.CheckItem", "CheckItem")
+                    b.HasOne("backend.Models.CosCheckItem", "CheckItem")
                         .WithMany("SubRows")
                         .HasForeignKey("CheckItemId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2355,101 +3379,9 @@ namespace backend.Migrations
                     b.Navigation("CheckItem");
                 });
 
-            modelBuilder.Entity("backend.Models.FormProblemColumn", b =>
+            modelBuilder.Entity("backend.Models.CosCheckValue", b =>
                 {
-                    b.HasOne("backend.Models.FormDefinition", "Form")
-                        .WithMany("ProblemColumns")
-                        .HasForeignKey("FormId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Form");
-                });
-
-            modelBuilder.Entity("backend.Models.FormSignatureSlot", b =>
-                {
-                    b.HasOne("backend.Models.FormDefinition", "Form")
-                        .WithMany("SignatureSlots")
-                        .HasForeignKey("FormId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Form");
-                });
-
-            modelBuilder.Entity("backend.Models.FormSubmission", b =>
-                {
-                    b.HasOne("backend.Models.FormDefinition", "Form")
-                        .WithMany("Submissions")
-                        .HasForeignKey("FormId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("backend.Models.Kasie", "Kasie")
-                        .WithMany()
-                        .HasForeignKey("KasieId");
-
-                    b.HasOne("backend.Models.Kasubsie", "Kasubsie")
-                        .WithMany()
-                        .HasForeignKey("KasubsieId");
-
-                    b.HasOne("backend.Models.Leader", "Leader")
-                        .WithMany()
-                        .HasForeignKey("LeaderId");
-
-                    b.HasOne("backend.Models.Operator", "Operator")
-                        .WithMany()
-                        .HasForeignKey("OperatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Form");
-
-                    b.Navigation("Kasie");
-
-                    b.Navigation("Kasubsie");
-
-                    b.Navigation("Leader");
-
-                    b.Navigation("Operator");
-                });
-
-            modelBuilder.Entity("backend.Models.Kasubsie", b =>
-                {
-                    b.HasOne("backend.Models.Kasie", "Kasie")
-                        .WithMany("Kasubsies")
-                        .HasForeignKey("KasieId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Kasie");
-                });
-
-            modelBuilder.Entity("backend.Models.Leader", b =>
-                {
-                    b.HasOne("backend.Models.Kasubsie", "Kasubsie")
-                        .WithMany("Leaders")
-                        .HasForeignKey("KasubsieId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Kasubsie");
-                });
-
-            modelBuilder.Entity("backend.Models.Operator", b =>
-                {
-                    b.HasOne("backend.Models.Leader", "Leader")
-                        .WithMany("Operators")
-                        .HasForeignKey("LeaderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Leader");
-                });
-
-            modelBuilder.Entity("backend.Models.SubmissionCheckValue", b =>
-                {
-                    b.HasOne("backend.Models.FormSubmission", "Submission")
+                    b.HasOne("backend.Models.CosSubmission", "Submission")
                         .WithMany("CheckValues")
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2458,9 +3390,9 @@ namespace backend.Migrations
                     b.Navigation("Submission");
                 });
 
-            modelBuilder.Entity("backend.Models.SubmissionProblem", b =>
+            modelBuilder.Entity("backend.Models.CosProblem", b =>
                 {
-                    b.HasOne("backend.Models.FormSubmission", "Submission")
+                    b.HasOne("backend.Models.CosSubmission", "Submission")
                         .WithMany("Problems")
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2469,9 +3401,20 @@ namespace backend.Migrations
                     b.Navigation("Submission");
                 });
 
-            modelBuilder.Entity("backend.Models.SubmissionSignature", b =>
+            modelBuilder.Entity("backend.Models.CosProblemColumn", b =>
                 {
-                    b.HasOne("backend.Models.FormSubmission", "Submission")
+                    b.HasOne("backend.Models.CosFormDefinition", "Form")
+                        .WithMany("ProblemColumns")
+                        .HasForeignKey("FormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Form");
+                });
+
+            modelBuilder.Entity("backend.Models.CosSignatureEntry", b =>
+                {
+                    b.HasOne("backend.Models.CosSubmission", "Submission")
                         .WithMany("Signatures")
                         .HasForeignKey("SubmissionId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2480,51 +3423,54 @@ namespace backend.Migrations
                     b.Navigation("Submission");
                 });
 
-            modelBuilder.Entity("backend.Models.BatteryType", b =>
+            modelBuilder.Entity("backend.Models.CosSignatureSlot", b =>
                 {
-                    b.Navigation("Molds");
+                    b.HasOne("backend.Models.CosFormDefinition", "Form")
+                        .WithMany("SignatureSlots")
+                        .HasForeignKey("FormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
+                    b.Navigation("Form");
+                });
+
+            modelBuilder.Entity("backend.Models.CosSubmission", b =>
+                {
+                    b.HasOne("backend.Models.CosFormDefinition", "Form")
+                        .WithMany()
+                        .HasForeignKey("FormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Form");
+                });
+
+            modelBuilder.Entity("backend.Models.CosBatteryType", b =>
+                {
                     b.Navigation("Standards");
                 });
 
-            modelBuilder.Entity("backend.Models.CheckItem", b =>
+            modelBuilder.Entity("backend.Models.CosCheckItem", b =>
                 {
                     b.Navigation("SubRows");
                 });
 
-            modelBuilder.Entity("backend.Models.FormDefinition", b =>
+            modelBuilder.Entity("backend.Models.CosFormDefinition", b =>
                 {
                     b.Navigation("CheckItems");
 
                     b.Navigation("ProblemColumns");
 
                     b.Navigation("SignatureSlots");
-
-                    b.Navigation("Submissions");
                 });
 
-            modelBuilder.Entity("backend.Models.FormSubmission", b =>
+            modelBuilder.Entity("backend.Models.CosSubmission", b =>
                 {
                     b.Navigation("CheckValues");
 
                     b.Navigation("Problems");
 
                     b.Navigation("Signatures");
-                });
-
-            modelBuilder.Entity("backend.Models.Kasie", b =>
-                {
-                    b.Navigation("Kasubsies");
-                });
-
-            modelBuilder.Entity("backend.Models.Kasubsie", b =>
-                {
-                    b.Navigation("Leaders");
-                });
-
-            modelBuilder.Entity("backend.Models.Leader", b =>
-                {
-                    b.Navigation("Operators");
                 });
 #pragma warning restore 612, 618
         }

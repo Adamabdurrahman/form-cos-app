@@ -12,83 +12,84 @@ public class FormDefinitionController : ControllerBase
     private readonly FormCosDbContext _db;
     public FormDefinitionController(FormCosDbContext db) => _db = db;
 
-    // GET api/formdefinition
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var forms = await _db.FormDefinitions
-            .Where(f => f.IsActive)
-            .OrderBy(f => f.Code)
-            .Select(f => new { f.Id, f.Code, f.Title, f.Subtitle, f.SlotCount, f.IsActive, f.CreatedAt })
+        var defs = await _db.CosFormDefinitions
+            .OrderBy(d => d.Id)
+            .Select(d => new { d.Id, d.Code, d.Title, d.Subtitle, d.SlotCount, d.IsActive })
             .ToListAsync();
-        return Ok(forms);
+        return Ok(defs);
     }
 
-    // GET api/formdefinition/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var form = await _db.FormDefinitions
-            .Include(f => f.CheckItems.OrderBy(c => c.SortOrder))
-                .ThenInclude(c => c.SubRows.OrderBy(s => s.SortOrder))
-            .Include(f => f.ProblemColumns.OrderBy(p => p.SortOrder))
-            .Include(f => f.SignatureSlots.OrderBy(s => s.SortOrder))
-            .FirstOrDefaultAsync(f => f.Id == id);
+        var def = await _db.CosFormDefinitions
+            .Include(d => d.CheckItems).ThenInclude(c => c.SubRows)
+            .Include(d => d.ProblemColumns)
+            .Include(d => d.SignatureSlots)
+            .FirstOrDefaultAsync(d => d.Id == id);
+        if (def == null) return NotFound();
 
-        if (form == null) return NotFound();
-        return Ok(form);
+        def.CheckItems = def.CheckItems.OrderBy(c => c.SortOrder).ToList();
+        foreach (var ci in def.CheckItems)
+            ci.SubRows = ci.SubRows.OrderBy(s => s.SortOrder).ToList();
+        def.ProblemColumns = def.ProblemColumns.OrderBy(p => p.SortOrder).ToList();
+        def.SignatureSlots = def.SignatureSlots.OrderBy(s => s.SortOrder).ToList();
+        return Ok(def);
     }
 
-    // GET api/formdefinition/by-code/COS_VALIDATION
     [HttpGet("by-code/{code}")]
     public async Task<IActionResult> GetByCode(string code)
     {
-        var form = await _db.FormDefinitions
-            .Include(f => f.CheckItems.OrderBy(c => c.SortOrder))
-                .ThenInclude(c => c.SubRows.OrderBy(s => s.SortOrder))
-            .Include(f => f.ProblemColumns.OrderBy(p => p.SortOrder))
-            .Include(f => f.SignatureSlots.OrderBy(s => s.SortOrder))
-            .FirstOrDefaultAsync(f => f.Code == code);
+        var def = await _db.CosFormDefinitions
+            .Include(d => d.CheckItems).ThenInclude(c => c.SubRows)
+            .Include(d => d.ProblemColumns)
+            .Include(d => d.SignatureSlots)
+            .FirstOrDefaultAsync(d => d.Code == code);
+        if (def == null) return NotFound();
 
-        if (form == null) return NotFound();
-        return Ok(form);
+        def.CheckItems = def.CheckItems.OrderBy(c => c.SortOrder).ToList();
+        foreach (var ci in def.CheckItems)
+            ci.SubRows = ci.SubRows.OrderBy(s => s.SortOrder).ToList();
+        def.ProblemColumns = def.ProblemColumns.OrderBy(p => p.SortOrder).ToList();
+        def.SignatureSlots = def.SignatureSlots.OrderBy(s => s.SortOrder).ToList();
+        return Ok(def);
     }
 
-    // POST api/formdefinition
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] FormDefinition form)
+    public async Task<IActionResult> Create([FromBody] CosFormDefinition def)
     {
-        form.CreatedAt = DateTime.UtcNow;
-        _db.FormDefinitions.Add(form);
+        def.CreatedAt = DateTime.UtcNow;
+        _db.CosFormDefinitions.Add(def);
         await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = form.Id }, form);
+        return Ok(def);
     }
 
-    // PUT api/formdefinition/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] FormDefinition form)
+    public async Task<IActionResult> Update(int id, [FromBody] System.Text.Json.JsonElement body)
     {
-        var existing = await _db.FormDefinitions.FindAsync(id);
+        var existing = await _db.CosFormDefinitions.FindAsync(id);
         if (existing == null) return NotFound();
 
-        existing.Code = form.Code;
-        existing.Title = form.Title;
-        existing.Subtitle = form.Subtitle;
-        existing.SlotCount = form.SlotCount;
-        existing.IsActive = form.IsActive;
+        if (body.TryGetProperty("code", out var c)) existing.Code = c.GetString()!;
+        if (body.TryGetProperty("title", out var t)) existing.Title = t.GetString()!;
+        if (body.TryGetProperty("subtitle", out var s)) existing.Subtitle = s.GetString();
+        if (body.TryGetProperty("slotCount", out var sc)) existing.SlotCount = sc.GetInt32();
+        if (body.TryGetProperty("isActive", out var ia)) existing.IsActive = ia.GetBoolean();
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         return Ok(existing);
     }
 
-    // DELETE api/formdefinition/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var existing = await _db.FormDefinitions.FindAsync(id);
+        var existing = await _db.CosFormDefinitions.FindAsync(id);
         if (existing == null) return NotFound();
-        _db.FormDefinitions.Remove(existing);
+        _db.CosFormDefinitions.Remove(existing);
         await _db.SaveChangesAsync();
         return NoContent();
     }

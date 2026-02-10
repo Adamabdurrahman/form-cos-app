@@ -4,56 +4,65 @@ using backend.Data;
 
 namespace backend.Controllers;
 
-/// <summary>
-/// Returns battery type reference data including molds and standards.
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class BatteryController : ControllerBase
 {
     private readonly FormCosDbContext _db;
-
     public BatteryController(FormCosDbContext db) => _db = db;
 
-    /// <summary>
-    /// GET /api/battery/types — List all battery types with molds and standards
-    /// Returns in the same shape as frontend's batteryTypes array:
-    /// [{ name, molds: string[], standards: { key: value } }]
-    /// </summary>
+    // GET api/battery/types
     [HttpGet("types")]
-    public async Task<IActionResult> GetBatteryTypes()
+    public async Task<IActionResult> GetTypes()
     {
-        var types = await _db.BatteryTypes
-            .Include(bt => bt.Molds)
-            .Include(bt => bt.Standards)
-            .OrderBy(bt => bt.Id)
+        var types = await _db.CosBatteryTypes
+            .Include(t => t.Standards)
+            .OrderBy(t => t.Name)
+            .ToListAsync();
+        return Ok(types);
+    }
+
+    // GET api/battery/lines
+    [HttpGet("lines")]
+    public async Task<IActionResult> GetLines()
+    {
+        var lines = await _db.TlkpLines
+            .Where(l => l.LineStatus == 1)
+            .OrderBy(l => l.LineId)
+            .Select(l => new { id = l.LineId, name = l.LineName })
+            .ToListAsync();
+        return Ok(lines);
+    }
+
+    // GET api/battery/shifts
+    [HttpGet("shifts")]
+    public async Task<IActionResult> GetShifts()
+    {
+        var shifts = await _db.TlkpShifts
+            .Where(s => s.ShiftStatus == 1)
+            .OrderBy(s => s.ShiftId)
             .ToListAsync();
 
-        var result = types.Select(bt => new
+        var result = shifts.Select(s => new
         {
-            bt.Name,
-            Molds = bt.Molds.OrderBy(m => m.Id).Select(m => m.Name).ToList(),
-            Standards = bt.Standards.ToDictionary(s => s.ParamKey, s => s.Value)
+            id = s.ShiftId,
+            name = s.ShiftName,
+            code = s.ShiftCode,
+            start = s.ShiftStart.HasValue ? s.ShiftStart.Value.ToString(@"hh\:mm") : null,
+            end = s.ShiftEnd.HasValue ? s.ShiftEnd.Value.ToString(@"hh\:mm") : null
         });
-
         return Ok(result);
     }
 
-    /// <summary>
-    /// GET /api/battery/lines — Line numbers available for COS
-    /// </summary>
-    [HttpGet("lines")]
-    public IActionResult GetLines()
+    // GET api/battery/molds
+    [HttpGet("molds")]
+    public async Task<IActionResult> GetMolds()
     {
-        return Ok(new[] { 2, 3, 4, 5, 6, 7, 8 });
-    }
-
-    /// <summary>
-    /// GET /api/battery/shifts — Shift numbers available
-    /// </summary>
-    [HttpGet("shifts")]
-    public IActionResult GetShifts()
-    {
-        return Ok(new[] { 1, 2, 3 });
+        var molds = await _db.TlkpMolds
+            .Where(m => m.MoldStatus == "1")
+            .OrderBy(m => m.MoldCode)
+            .Select(m => new { code = m.MoldCode, description = m.MoldDescription })
+            .ToListAsync();
+        return Ok(molds);
     }
 }

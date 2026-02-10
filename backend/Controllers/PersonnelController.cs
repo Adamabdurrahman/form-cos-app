@@ -4,90 +4,129 @@ using backend.Data;
 
 namespace backend.Controllers;
 
-/// <summary>
-/// Returns personnel hierarchy data (Kasie → Kasubsie → Leader → Operator).
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class PersonnelController : ControllerBase
 {
     private readonly FormCosDbContext _db;
-
     public PersonnelController(FormCosDbContext db) => _db = db;
 
-    /// <summary>
-    /// GET /api/personnel/operators — List all operators
-    /// </summary>
+    // GET api/personnel/operators
     [HttpGet("operators")]
     public async Task<IActionResult> GetOperators()
     {
-        var data = await _db.Operators
-            .OrderBy(o => o.Name)
-            .Select(o => new { o.Id, o.Name, o.LeaderId })
-            .ToListAsync();
-        return Ok(data);
+        var operators = await (
+            from op in _db.TlkpOperators
+            join auth in _db.ViewDataAuths on op.UserId equals auth.EmpId into authJoin
+            from a in authJoin.DefaultIfEmpty()
+            select new { empId = op.UserId, name = a != null ? a.FullName : op.UserId, empNo = a != null ? a.EmpNo : null, lgpId = op.LgpId, groupId = op.GroupId }
+        ).ToListAsync();
+        return Ok(operators);
     }
 
-    /// <summary>
-    /// GET /api/personnel/leaders — List all leaders
-    /// </summary>
+    // GET api/personnel/leaders
     [HttpGet("leaders")]
     public async Task<IActionResult> GetLeaders()
     {
-        var data = await _db.Leaders
-            .OrderBy(l => l.Name)
-            .Select(l => new { l.Id, l.Name, l.KasubsieId })
+        var leaderEmpIds = await _db.TlkpLineGroups
+            .Where(lg => lg.LgpLeader != null)
+            .Select(lg => lg.LgpLeader!)
+            .Distinct().ToListAsync();
+
+        var leaders = await _db.ViewDataAuths
+            .Where(a => leaderEmpIds.Contains(a.EmpId))
+            .Select(a => new { empId = a.EmpId, name = a.FullName, empNo = a.EmpNo })
             .ToListAsync();
-        return Ok(data);
+
+        // include any emp_ids not found in ViewDataAuth
+        var foundIds = leaders.Select(l => l.empId).ToHashSet();
+        var missing = leaderEmpIds.Where(e => !foundIds.Contains(e))
+            .Select(e => new { empId = e, name = e, empNo = (string?)null });
+
+        return Ok(leaders.Concat(missing));
     }
 
-    /// <summary>
-    /// GET /api/personnel/kasubsies — List all kasubsie
-    /// </summary>
+    // GET api/personnel/kasubsies
     [HttpGet("kasubsies")]
     public async Task<IActionResult> GetKasubsies()
     {
-        var data = await _db.Kasubsies
-            .OrderBy(k => k.Name)
-            .Select(k => new { k.Id, k.Name, k.KasieId })
+        var empIds = await _db.TlkpLineGroups
+            .Where(lg => lg.LgpKasubsie != null)
+            .Select(lg => lg.LgpKasubsie!)
+            .Distinct().ToListAsync();
+
+        var kasubsies = await _db.ViewDataAuths
+            .Where(a => empIds.Contains(a.EmpId))
+            .Select(a => new { empId = a.EmpId, name = a.FullName, empNo = a.EmpNo })
             .ToListAsync();
-        return Ok(data);
+
+        var foundIds = kasubsies.Select(k => k.empId).ToHashSet();
+        var missing = empIds.Where(e => !foundIds.Contains(e))
+            .Select(e => new { empId = e, name = e, empNo = (string?)null });
+
+        return Ok(kasubsies.Concat(missing));
     }
 
-    /// <summary>
-    /// GET /api/personnel/kasies — List all kasie
-    /// </summary>
+    // GET api/personnel/kasies
     [HttpGet("kasies")]
     public async Task<IActionResult> GetKasies()
     {
-        var data = await _db.Kasies
-            .OrderBy(k => k.Name)
-            .Select(k => new { k.Id, k.Name })
+        var empIds = await _db.TlkpUserKasies
+            .Where(uk => uk.KasieEmpId != null)
+            .Select(uk => uk.KasieEmpId!)
+            .Distinct().ToListAsync();
+
+        var kasies = await _db.ViewDataAuths
+            .Where(a => empIds.Contains(a.EmpId))
+            .Select(a => new { empId = a.EmpId, name = a.FullName, empNo = a.EmpNo })
             .ToListAsync();
-        return Ok(data);
+
+        var foundIds = kasies.Select(k => k.empId).ToHashSet();
+        var missing = empIds.Where(e => !foundIds.Contains(e))
+            .Select(e => new { empId = e, name = e, empNo = (string?)null });
+
+        return Ok(kasies.Concat(missing));
     }
 
-    /// <summary>
-    /// GET /api/personnel/hierarchy/{operatorId} — Resolve full hierarchy for an operator
-    /// Returns: { operator, leader, kasubsie, kasie }
-    /// </summary>
-    [HttpGet("hierarchy/{operatorId:int}")]
-    public async Task<IActionResult> GetHierarchy(int operatorId)
+    // GET api/personnel/hierarchy/{operatorEmpId}
+    [HttpGet("hierarchy/{operatorEmpId}")]
+    public async Task<IActionResult> GetHierarchy(string operatorEmpId)
     {
-        var op = await _db.Operators
-            .Include(o => o.Leader)
-                .ThenInclude(l => l!.Kasubsie)
-                    .ThenInclude(k => k!.Kasie)
-            .FirstOrDefaultAsync(o => o.Id == operatorId);
+        var op = await _db.TlkpOperators.FirstOrDefaultAsync(o => o.UserId == operatorEmpId);
+        if (op == null) return NotFound("Operator not found");
 
-        if (op == null) return NotFound(new { message = $"Operator {operatorId} not found" });
+        var lineGroup = await _db.TlkpLineGroups.FirstOrDefaultAsync(lg => lg.LgpId == op.LgpId);
+
+        string? leaderEmpId = lineGroup?.LgpLeader;
+        string? kasubsieEmpId = lineGroup?.LgpKasubsie;
+        string? kasieEmpId = null;
+
+        if (lineGroup?.UserKasieId != null)
+        {
+            var userKasie = await _db.TlkpUserKasies.FirstOrDefaultAsync(uk => uk.UserKasieId == lineGroup.UserKasieId);
+            kasieEmpId = userKasie?.KasieEmpId;
+        }
+
+        // Resolve all names
+        var allEmpIds = new[] { operatorEmpId, leaderEmpId, kasubsieEmpId, kasieEmpId }
+            .Where(e => e != null).Cast<string>().Distinct().ToList();
+
+        var authLookup = await _db.ViewDataAuths
+            .Where(a => allEmpIds.Contains(a.EmpId))
+            .ToDictionaryAsync(a => a.EmpId, a => a.FullName);
+
+        string ResolveName(string? empId) => empId != null && authLookup.TryGetValue(empId, out var n) ? n : empId ?? "";
 
         return Ok(new
         {
-            @operator = new { op.Id, op.Name },
-            leader = op.Leader != null ? new { op.Leader.Id, op.Leader.Name } : null,
-            kasubsie = op.Leader?.Kasubsie != null ? new { op.Leader.Kasubsie.Id, op.Leader.Kasubsie.Name } : null,
-            kasie = op.Leader?.Kasubsie?.Kasie != null ? new { op.Leader.Kasubsie.Kasie.Id, op.Leader.Kasubsie.Kasie.Name } : null,
+            operatorEmpId,
+            operatorName = ResolveName(operatorEmpId),
+            leaderEmpId,
+            leaderName = ResolveName(leaderEmpId),
+            kasubsieEmpId,
+            kasubsieName = ResolveName(kasubsieEmpId),
+            kasieEmpId,
+            kasieName = ResolveName(kasieEmpId)
         });
     }
 }

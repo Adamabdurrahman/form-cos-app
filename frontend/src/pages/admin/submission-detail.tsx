@@ -46,12 +46,12 @@ export function SubmissionDetail() {
       <div className="info-cards">
         <InfoCard label="Form" value={data.form?.title ?? `Form #${data.formId}`} />
         <InfoCard label="Tanggal" value={data.tanggal} />
-        <InfoCard label="Line" value={String(data.line)} />
-        <InfoCard label="Shift" value={String(data.shift)} />
-        <InfoCard label="Operator" value={data.operator?.name ?? String(data.operatorId)} />
-        {data.leader && <InfoCard label="Leader" value={data.leader.name} />}
-        {data.kasubsie && <InfoCard label="Kasubsie" value={data.kasubsie.name} />}
-        {data.kasie && <InfoCard label="Kasie" value={data.kasie.name} />}
+        <InfoCard label="Line" value={data.lineId != null ? String(data.lineId) : '-'} />
+        <InfoCard label="Shift" value={data.shiftId != null ? String(data.shiftId) : '-'} />
+        <InfoCard label="Operator" value={data.operatorName ?? data.operatorEmpId ?? '-'} />
+        {data.leaderName && <InfoCard label="Leader" value={data.leaderName} />}
+        {data.kasubsieName && <InfoCard label="Kasubsie" value={data.kasubsieName} />}
+        {data.kasieName && <InfoCard label="Kasie" value={data.kasieName} />}
       </div>
 
       {batterySlots.length > 0 && (

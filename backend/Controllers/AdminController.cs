@@ -25,8 +25,6 @@ public class AdminController : ControllerBase
         if (v.ValueKind == JsonValueKind.Number) return v.GetDecimal();
         return null;
     }
-    private static bool? GetBool(JsonElement el, string prop) =>
-        el.TryGetProperty(prop, out var v) && (v.ValueKind == JsonValueKind.True || v.ValueKind == JsonValueKind.False) ? v.GetBoolean() : null;
     private static bool Has(JsonElement el, string prop) => el.TryGetProperty(prop, out _);
 
     // ═══════════ CHECK ITEMS ═══════════
@@ -34,7 +32,7 @@ public class AdminController : ControllerBase
     [HttpGet("checkitems")]
     public async Task<IActionResult> GetCheckItems([FromQuery] int formId)
     {
-        var items = await _db.CheckItems
+        var items = await _db.CosCheckItems
             .Where(c => c.FormId == formId)
             .Include(c => c.SubRows.OrderBy(s => s.SortOrder))
             .OrderBy(c => c.SortOrder)
@@ -43,9 +41,9 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("checkitems")]
-    public async Task<IActionResult> CreateCheckItem([FromBody] CheckItem item)
+    public async Task<IActionResult> CreateCheckItem([FromBody] CosCheckItem item)
     {
-        _db.CheckItems.Add(item);
+        _db.CosCheckItems.Add(item);
         await _db.SaveChangesAsync();
         return Ok(item);
     }
@@ -53,7 +51,7 @@ public class AdminController : ControllerBase
     [HttpPut("checkitems/{id}")]
     public async Task<IActionResult> UpdateCheckItem(int id, [FromBody] JsonElement body)
     {
-        var e = await _db.CheckItems.FindAsync(id);
+        var e = await _db.CosCheckItems.FindAsync(id);
         if (e == null) return NotFound();
 
         if (Has(body, "itemKey"))          e.ItemKey = GetStr(body, "itemKey") ?? e.ItemKey;
@@ -76,9 +74,9 @@ public class AdminController : ControllerBase
     [HttpDelete("checkitems/{id}")]
     public async Task<IActionResult> DeleteCheckItem(int id)
     {
-        var e = await _db.CheckItems.FindAsync(id);
+        var e = await _db.CosCheckItems.FindAsync(id);
         if (e == null) return NotFound();
-        _db.CheckItems.Remove(e);
+        _db.CosCheckItems.Remove(e);
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -86,9 +84,9 @@ public class AdminController : ControllerBase
     // ═══════════ SUB ROWS ═══════════
 
     [HttpPost("subrows")]
-    public async Task<IActionResult> CreateSubRow([FromBody] CheckSubRow row)
+    public async Task<IActionResult> CreateSubRow([FromBody] CosCheckSubRow row)
     {
-        _db.CheckSubRows.Add(row);
+        _db.CosCheckSubRows.Add(row);
         await _db.SaveChangesAsync();
         return Ok(row);
     }
@@ -96,7 +94,7 @@ public class AdminController : ControllerBase
     [HttpPut("subrows/{id}")]
     public async Task<IActionResult> UpdateSubRow(int id, [FromBody] JsonElement body)
     {
-        var e = await _db.CheckSubRows.FindAsync(id);
+        var e = await _db.CosCheckSubRows.FindAsync(id);
         if (e == null) return NotFound();
 
         if (Has(body, "suffix"))        e.Suffix = GetStr(body, "suffix") ?? e.Suffix;
@@ -113,9 +111,9 @@ public class AdminController : ControllerBase
     [HttpDelete("subrows/{id}")]
     public async Task<IActionResult> DeleteSubRow(int id)
     {
-        var e = await _db.CheckSubRows.FindAsync(id);
+        var e = await _db.CosCheckSubRows.FindAsync(id);
         if (e == null) return NotFound();
-        _db.CheckSubRows.Remove(e);
+        _db.CosCheckSubRows.Remove(e);
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -125,7 +123,7 @@ public class AdminController : ControllerBase
     [HttpGet("problemcolumns")]
     public async Task<IActionResult> GetProblemColumns([FromQuery] int formId)
     {
-        var cols = await _db.FormProblemColumns
+        var cols = await _db.CosProblemColumns
             .Where(c => c.FormId == formId)
             .OrderBy(c => c.SortOrder)
             .ToListAsync();
@@ -133,9 +131,9 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("problemcolumns")]
-    public async Task<IActionResult> CreateProblemColumn([FromBody] FormProblemColumn col)
+    public async Task<IActionResult> CreateProblemColumn([FromBody] CosProblemColumn col)
     {
-        _db.FormProblemColumns.Add(col);
+        _db.CosProblemColumns.Add(col);
         await _db.SaveChangesAsync();
         return Ok(col);
     }
@@ -143,7 +141,7 @@ public class AdminController : ControllerBase
     [HttpPut("problemcolumns/{id}")]
     public async Task<IActionResult> UpdateProblemColumn(int id, [FromBody] JsonElement body)
     {
-        var e = await _db.FormProblemColumns.FindAsync(id);
+        var e = await _db.CosProblemColumns.FindAsync(id);
         if (e == null) return NotFound();
 
         if (Has(body, "columnKey")) e.ColumnKey = GetStr(body, "columnKey") ?? e.ColumnKey;
@@ -159,9 +157,9 @@ public class AdminController : ControllerBase
     [HttpDelete("problemcolumns/{id}")]
     public async Task<IActionResult> DeleteProblemColumn(int id)
     {
-        var e = await _db.FormProblemColumns.FindAsync(id);
+        var e = await _db.CosProblemColumns.FindAsync(id);
         if (e == null) return NotFound();
-        _db.FormProblemColumns.Remove(e);
+        _db.CosProblemColumns.Remove(e);
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -171,7 +169,7 @@ public class AdminController : ControllerBase
     [HttpGet("signatureslots")]
     public async Task<IActionResult> GetSignatureSlots([FromQuery] int formId)
     {
-        var slots = await _db.FormSignatureSlots
+        var slots = await _db.CosSignatureSlots
             .Where(s => s.FormId == formId)
             .OrderBy(s => s.SortOrder)
             .ToListAsync();
@@ -179,9 +177,9 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("signatureslots")]
-    public async Task<IActionResult> CreateSignatureSlot([FromBody] FormSignatureSlot slot)
+    public async Task<IActionResult> CreateSignatureSlot([FromBody] CosSignatureSlot slot)
     {
-        _db.FormSignatureSlots.Add(slot);
+        _db.CosSignatureSlots.Add(slot);
         await _db.SaveChangesAsync();
         return Ok(slot);
     }
@@ -189,7 +187,7 @@ public class AdminController : ControllerBase
     [HttpPut("signatureslots/{id}")]
     public async Task<IActionResult> UpdateSignatureSlot(int id, [FromBody] JsonElement body)
     {
-        var e = await _db.FormSignatureSlots.FindAsync(id);
+        var e = await _db.CosSignatureSlots.FindAsync(id);
         if (e == null) return NotFound();
 
         if (Has(body, "roleKey"))   e.RoleKey = GetStr(body, "roleKey") ?? e.RoleKey;
@@ -203,9 +201,9 @@ public class AdminController : ControllerBase
     [HttpDelete("signatureslots/{id}")]
     public async Task<IActionResult> DeleteSignatureSlot(int id)
     {
-        var e = await _db.FormSignatureSlots.FindAsync(id);
+        var e = await _db.CosSignatureSlots.FindAsync(id);
         if (e == null) return NotFound();
-        _db.FormSignatureSlots.Remove(e);
+        _db.CosSignatureSlots.Remove(e);
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -215,14 +213,12 @@ public class AdminController : ControllerBase
     [HttpGet("batterytypes")]
     public async Task<IActionResult> GetBatteryTypes()
     {
-        var types = await _db.BatteryTypes
-            .Include(t => t.Molds)
+        var types = await _db.CosBatteryTypes
             .Include(t => t.Standards)
             .OrderBy(t => t.Name)
             .Select(t => new
             {
                 t.Id, t.Name,
-                Molds = t.Molds.OrderBy(m => m.Name).Select(m => new { m.Id, m.Name, m.BatteryTypeId }),
                 Standards = t.Standards.OrderBy(s => s.ParamKey).Select(s => new { s.Id, s.ParamKey, s.Value, s.MinValue, s.MaxValue, s.BatteryTypeId }),
             })
             .ToListAsync();
@@ -230,9 +226,9 @@ public class AdminController : ControllerBase
     }
 
     [HttpPost("batterytypes")]
-    public async Task<IActionResult> CreateBatteryType([FromBody] BatteryType type)
+    public async Task<IActionResult> CreateBatteryType([FromBody] CosBatteryType type)
     {
-        _db.BatteryTypes.Add(type);
+        _db.CosBatteryTypes.Add(type);
         await _db.SaveChangesAsync();
         return Ok(new { type.Id, type.Name });
     }
@@ -240,7 +236,7 @@ public class AdminController : ControllerBase
     [HttpPut("batterytypes/{id}")]
     public async Task<IActionResult> UpdateBatteryType(int id, [FromBody] JsonElement body)
     {
-        var e = await _db.BatteryTypes.FindAsync(id);
+        var e = await _db.CosBatteryTypes.FindAsync(id);
         if (e == null) return NotFound();
         if (Has(body, "name")) e.Name = GetStr(body, "name") ?? e.Name;
         await _db.SaveChangesAsync();
@@ -250,9 +246,9 @@ public class AdminController : ControllerBase
     [HttpDelete("batterytypes/{id}")]
     public async Task<IActionResult> DeleteBatteryType(int id)
     {
-        var e = await _db.BatteryTypes.FindAsync(id);
+        var e = await _db.CosBatteryTypes.FindAsync(id);
         if (e == null) return NotFound();
-        _db.BatteryTypes.Remove(e);
+        _db.CosBatteryTypes.Remove(e);
         await _db.SaveChangesAsync();
         return NoContent();
     }
@@ -262,15 +258,15 @@ public class AdminController : ControllerBase
     [HttpGet("batterystandards")]
     public async Task<IActionResult> GetBatteryStandards([FromQuery] int? batteryTypeId)
     {
-        var query = _db.BatteryStandards.AsQueryable();
+        var query = _db.CosBatteryStandards.AsQueryable();
         if (batteryTypeId.HasValue) query = query.Where(s => s.BatteryTypeId == batteryTypeId.Value);
         return Ok(await query.ToListAsync());
     }
 
     [HttpPost("batterystandards")]
-    public async Task<IActionResult> CreateBatteryStandard([FromBody] BatteryStandard std)
+    public async Task<IActionResult> CreateBatteryStandard([FromBody] CosBatteryStandard std)
     {
-        _db.BatteryStandards.Add(std);
+        _db.CosBatteryStandards.Add(std);
         await _db.SaveChangesAsync();
         return Ok(std);
     }
@@ -278,7 +274,7 @@ public class AdminController : ControllerBase
     [HttpPut("batterystandards/{id}")]
     public async Task<IActionResult> UpdateBatteryStandard(int id, [FromBody] JsonElement body)
     {
-        var e = await _db.BatteryStandards.FindAsync(id);
+        var e = await _db.CosBatteryStandards.FindAsync(id);
         if (e == null) return NotFound();
 
         if (Has(body, "paramKey"))      e.ParamKey = GetStr(body, "paramKey") ?? e.ParamKey;
@@ -294,172 +290,55 @@ public class AdminController : ControllerBase
     [HttpDelete("batterystandards/{id}")]
     public async Task<IActionResult> DeleteBatteryStandard(int id)
     {
-        var e = await _db.BatteryStandards.FindAsync(id);
+        var e = await _db.CosBatteryStandards.FindAsync(id);
         if (e == null) return NotFound();
-        _db.BatteryStandards.Remove(e);
+        _db.CosBatteryStandards.Remove(e);
         await _db.SaveChangesAsync();
         return NoContent();
     }
 
-    // ═══════════ BATTERY MOLDS ═══════════
+    // ═══════════ MOLDS (Master Data — read from tlkp_mold) ═══════════
 
-    [HttpPost("batterymolds")]
-    public async Task<IActionResult> CreateBatteryMold([FromBody] BatteryMold mold)
+    [HttpGet("molds")]
+    public async Task<IActionResult> GetMolds()
     {
-        _db.BatteryMolds.Add(mold);
-        await _db.SaveChangesAsync();
-        return Ok(mold);
+        var molds = await _db.TlkpMolds
+            .OrderBy(m => m.MoldCode)
+            .Select(m => new { m.MoldCode, m.MoldDescription, m.MoldStatus, m.IdSection })
+            .ToListAsync();
+        return Ok(molds);
     }
 
-    [HttpPut("batterymolds/{id}")]
-    public async Task<IActionResult> UpdateBatteryMold(int id, [FromBody] JsonElement body)
-    {
-        var e = await _db.BatteryMolds.FindAsync(id);
-        if (e == null) return NotFound();
-        if (Has(body, "name")) e.Name = GetStr(body, "name") ?? e.Name;
-        if (Has(body, "batteryTypeId")) e.BatteryTypeId = GetInt(body, "batteryTypeId") ?? e.BatteryTypeId;
-        await _db.SaveChangesAsync();
-        return Ok(e);
-    }
-
-    [HttpDelete("batterymolds/{id}")]
-    public async Task<IActionResult> DeleteBatteryMold(int id)
-    {
-        var e = await _db.BatteryMolds.FindAsync(id);
-        if (e == null) return NotFound();
-        _db.BatteryMolds.Remove(e);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
-
-    // ═══════════ PERSONNEL ═══════════
+    // ═══════════ PERSONNEL (read-only, from master data) ═══════════
 
     [HttpGet("personnel")]
     public async Task<IActionResult> GetPersonnel()
     {
-        var kasies = await _db.Kasies.OrderBy(k => k.Name).ToListAsync();
-        var kasubsies = await _db.Kasubsies.OrderBy(k => k.Name).ToListAsync();
-        var leaders = await _db.Leaders.OrderBy(l => l.Name).ToListAsync();
-        var operators = await _db.Operators.OrderBy(o => o.Name).ToListAsync();
-        return Ok(new { kasies, kasubsies, leaders, operators });
-    }
+        var operators = await (
+            from op in _db.TlkpOperators
+            join auth in _db.ViewDataAuths on op.UserId equals auth.EmpId into authJoin
+            from a in authJoin.DefaultIfEmpty()
+            select new { empId = op.UserId, name = a != null ? a.FullName : op.UserId, empNo = a != null ? a.EmpNo : null, lgpId = op.LgpId, groupId = op.GroupId }
+        ).ToListAsync();
 
-    // ── Operators ──
-    [HttpPost("operators")]
-    public async Task<IActionResult> CreateOperator([FromBody] Operator op)
-    {
-        _db.Operators.Add(op);
-        await _db.SaveChangesAsync();
-        return Ok(op);
-    }
+        var leaderEmpIds = await _db.TlkpLineGroups
+            .Where(lg => lg.LgpLeader != null).Select(lg => lg.LgpLeader!).Distinct().ToListAsync();
+        var leaders = await _db.ViewDataAuths
+            .Where(a => leaderEmpIds.Contains(a.EmpId))
+            .Select(a => new { empId = a.EmpId, name = a.FullName, empNo = a.EmpNo }).ToListAsync();
 
-    [HttpPut("operators/{id}")]
-    public async Task<IActionResult> UpdateOperator(int id, [FromBody] JsonElement body)
-    {
-        var e = await _db.Operators.FindAsync(id);
-        if (e == null) return NotFound();
-        if (Has(body, "name")) e.Name = GetStr(body, "name") ?? e.Name;
-        if (Has(body, "leaderId")) e.LeaderId = GetInt(body, "leaderId") ?? e.LeaderId;
-        await _db.SaveChangesAsync();
-        return Ok(e);
-    }
+        var kasubsieEmpIds = await _db.TlkpLineGroups
+            .Where(lg => lg.LgpKasubsie != null).Select(lg => lg.LgpKasubsie!).Distinct().ToListAsync();
+        var kasubsies = await _db.ViewDataAuths
+            .Where(a => kasubsieEmpIds.Contains(a.EmpId))
+            .Select(a => new { empId = a.EmpId, name = a.FullName, empNo = a.EmpNo }).ToListAsync();
 
-    [HttpDelete("operators/{id}")]
-    public async Task<IActionResult> DeleteOperator(int id)
-    {
-        var e = await _db.Operators.FindAsync(id);
-        if (e == null) return NotFound();
-        _db.Operators.Remove(e);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
+        var kasieEmpIds = await _db.TlkpUserKasies
+            .Select(uk => uk.KasieEmpId).Distinct().ToListAsync();
+        var kasies = await _db.ViewDataAuths
+            .Where(a => kasieEmpIds.Contains(a.EmpId))
+            .Select(a => new { empId = a.EmpId, name = a.FullName, empNo = a.EmpNo }).ToListAsync();
 
-    // ── Leaders ──
-    [HttpPost("leaders")]
-    public async Task<IActionResult> CreateLeader([FromBody] Leader leader)
-    {
-        _db.Leaders.Add(leader);
-        await _db.SaveChangesAsync();
-        return Ok(leader);
-    }
-
-    [HttpPut("leaders/{id}")]
-    public async Task<IActionResult> UpdateLeader(int id, [FromBody] JsonElement body)
-    {
-        var e = await _db.Leaders.FindAsync(id);
-        if (e == null) return NotFound();
-        if (Has(body, "name")) e.Name = GetStr(body, "name") ?? e.Name;
-        if (Has(body, "kasubsieId")) e.KasubsieId = GetInt(body, "kasubsieId") ?? e.KasubsieId;
-        await _db.SaveChangesAsync();
-        return Ok(e);
-    }
-
-    [HttpDelete("leaders/{id}")]
-    public async Task<IActionResult> DeleteLeader(int id)
-    {
-        var e = await _db.Leaders.FindAsync(id);
-        if (e == null) return NotFound();
-        _db.Leaders.Remove(e);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
-
-    // ── Kasubsie ──
-    [HttpPost("kasubsies")]
-    public async Task<IActionResult> CreateKasubsie([FromBody] Kasubsie ks)
-    {
-        _db.Kasubsies.Add(ks);
-        await _db.SaveChangesAsync();
-        return Ok(ks);
-    }
-
-    [HttpPut("kasubsies/{id}")]
-    public async Task<IActionResult> UpdateKasubsie(int id, [FromBody] JsonElement body)
-    {
-        var e = await _db.Kasubsies.FindAsync(id);
-        if (e == null) return NotFound();
-        if (Has(body, "name")) e.Name = GetStr(body, "name") ?? e.Name;
-        if (Has(body, "kasieId")) e.KasieId = GetInt(body, "kasieId") ?? e.KasieId;
-        await _db.SaveChangesAsync();
-        return Ok(e);
-    }
-
-    [HttpDelete("kasubsies/{id}")]
-    public async Task<IActionResult> DeleteKasubsie(int id)
-    {
-        var e = await _db.Kasubsies.FindAsync(id);
-        if (e == null) return NotFound();
-        _db.Kasubsies.Remove(e);
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
-
-    // ── Kasie ──
-    [HttpPost("kasies")]
-    public async Task<IActionResult> CreateKasie([FromBody] Kasie kasie)
-    {
-        _db.Kasies.Add(kasie);
-        await _db.SaveChangesAsync();
-        return Ok(kasie);
-    }
-
-    [HttpPut("kasies/{id}")]
-    public async Task<IActionResult> UpdateKasie(int id, [FromBody] JsonElement body)
-    {
-        var e = await _db.Kasies.FindAsync(id);
-        if (e == null) return NotFound();
-        if (Has(body, "name")) e.Name = GetStr(body, "name") ?? e.Name;
-        await _db.SaveChangesAsync();
-        return Ok(e);
-    }
-
-    [HttpDelete("kasies/{id}")]
-    public async Task<IActionResult> DeleteKasie(int id)
-    {
-        var e = await _db.Kasies.FindAsync(id);
-        if (e == null) return NotFound();
-        _db.Kasies.Remove(e);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        return Ok(new { operators, leaders, kasubsies, kasies });
     }
 }

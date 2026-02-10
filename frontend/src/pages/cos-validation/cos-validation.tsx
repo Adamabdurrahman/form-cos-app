@@ -9,11 +9,15 @@ import {
     getBatteryTypes,
     getLines,
     getShifts,
+    getMolds,
     getHierarchy,
     getFormDefinitionByCode,
     submitFormSubmission,
     type OperatorDto,
     type BatteryTypeDto,
+    type LineDto,
+    type ShiftDto,
+    type MoldDto,
     type CheckItemDto,
     type SubRowDto,
     type FormDefinitionDto,
@@ -45,17 +49,22 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
 
     // ===== REFERENCE DATA (from API) =====
     const [operatorList, setOperatorList] = useState<OperatorDto[]>([]);
-    const [lineList, setLineList] = useState<number[]>([]);
-    const [shiftList, setShiftList] = useState<number[]>([]);
+    const [lineList, setLineList] = useState<LineDto[]>([]);
+    const [shiftList, setShiftList] = useState<ShiftDto[]>([]);
     const [batteryTypes, setBatteryTypes] = useState<BatteryTypeDto[]>([]);
+    const [moldList, setMoldList] = useState<MoldDto[]>([]);
     const [loading, setLoading] = useState(true);
 
     // ===== HEADER STATE =====
     const [tanggal, setTanggal] = useState<Date>(new Date());
-    const [line, setLine] = useState<number | null>(null);
-    const [shift, setShift] = useState<number | null>(null);
-    const [operatorId, setOperatorId] = useState<number | null>(null);
-    const [hierarchyIds, setHierarchyIds] = useState<{ leaderId?: number; kasubsieId?: number; kasieId?: number }>({});
+    const [lineId, setLineId] = useState<number | null>(null);
+    const [shiftId, setShiftId] = useState<number | null>(null);
+    const [operatorEmpId, setOperatorEmpId] = useState<string | null>(null);
+    const [hierarchyIds, setHierarchyIds] = useState<{
+        leaderEmpId?: string | null;
+        kasubsieEmpId?: string | null;
+        kasieEmpId?: string | null;
+    }>({});
     const [hierarchyNames, setHierarchyNames] = useState<Record<string, string>>({});
 
     // ===== BATTERY SLOTS (dynamic count from formDef) =====
@@ -80,17 +89,19 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     useEffect(() => {
         async function loadData() {
             try {
-                const [ops, lines, shifts, btypes, fd] = await Promise.all([
+                const [ops, lines, shifts, btypes, molds, fd] = await Promise.all([
                     getOperators(),
                     getLines(),
                     getShifts(),
                     getBatteryTypes(),
+                    getMolds(),
                     getFormDefinitionByCode(formCode),
                 ]);
                 setOperatorList(ops);
                 setLineList(lines);
                 setShiftList(shifts);
                 setBatteryTypes(btypes);
+                setMoldList(molds);
                 setFormDef(fd);
 
                 // Initialize battery slots based on form definition
@@ -117,21 +128,21 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     }, [formCode]);
 
     // ===== HANDLERS =====
-    const handleOperatorChange = useCallback((e: { value?: number }) => {
-        const opId = e.value ?? null;
-        setOperatorId(opId);
-        if (opId) {
-            getHierarchy(opId).then(h => {
+    const handleOperatorChange = useCallback((e: { value?: string }) => {
+        const empId = e.value ?? null;
+        setOperatorEmpId(empId);
+        if (empId) {
+            getHierarchy(empId).then(h => {
                 setHierarchyIds({
-                    leaderId: h.leader?.id,
-                    kasubsieId: h.kasubsie?.id,
-                    kasieId: h.kasie?.id,
+                    leaderEmpId: h.leaderEmpId,
+                    kasubsieEmpId: h.kasubsieEmpId,
+                    kasieEmpId: h.kasieEmpId,
                 });
                 setHierarchyNames({
-                    operator: h.operator?.name ?? '',
-                    leader: h.leader?.name ?? '',
-                    kasubsie: h.kasubsie?.name ?? '',
-                    kasie: h.kasie?.name ?? '',
+                    operator: h.operatorName ?? '',
+                    leader: h.leaderName ?? '',
+                    kasubsie: h.kasubsieName ?? '',
+                    kasie: h.kasieName ?? '',
                 });
             }).catch(() => {
                 setHierarchyIds({});
@@ -179,23 +190,30 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     }, []);
 
     // ===== COMPUTED =====
-    const getMoldsForSlot = useCallback((slotIdx: number) => {
-        const bt = batterySlots[slotIdx]?.type;
-        if (!bt) return [];
-        return batteryTypes.find(t => t.name === bt)?.molds ?? [];
-    }, [batterySlots, batteryTypes]);
+    const getMoldsForSlot = useCallback((_slotIdx: number) => {
+        // Molds are from master data (TlkpMolds), available for all battery types
+        return moldList.map(m => m.code);
+    }, [moldList]);
+
+    const getStandardValue = useCallback(
+        (item: CheckItemDto, bt: BatteryTypeDto | undefined): string => {
+            if (!bt || !item.numericStdKey) return '';
+            const std = bt.standards.find(s => s.paramKey === item.numericStdKey);
+            return std?.value ?? '';
+        }, []
+    );
 
     const getStandard = useCallback(
         (item: CheckItemDto, subRow: SubRowDto | null, slotIdx: number): string => {
             if (subRow?.fixedStandard) return subRow.fixedStandard;
             if (item.type === 'visual') return item.visualStandard ?? '';
             if (item.fixedStandard) return item.fixedStandard;
-            const bt = batterySlots[slotIdx]?.type;
-            if (!bt || !item.numericStdKey) return '';
-            const typeData = batteryTypes.find(t => t.name === bt);
-            return typeData?.standards[item.numericStdKey] ?? '';
+            const btName = batterySlots[slotIdx]?.type;
+            if (!btName || !item.numericStdKey) return '';
+            const typeData = batteryTypes.find(t => t.name === btName);
+            return getStandardValue(item, typeData);
         },
-        [batterySlots, batteryTypes]
+        [batterySlots, batteryTypes, getStandardValue]
     );
 
     // Get min/max for a check item at a specific slot
@@ -211,13 +229,12 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
             }
             // Battery-type-dependent standards — look up from batteryTypes
             if (item.numericStdKey) {
-                const bt = batterySlots[slotIdx]?.type;
-                if (bt) {
-                    const typeData = batteryTypes.find(t => t.name === bt);
-                    const stdStr = typeData?.standards[item.numericStdKey] ?? '';
-                    if (stdStr && stdStr !== '-') {
-                        const match = stdStr.match(/([\d.]+)\s*-\s*([\d.]+)/);
-                        if (match) return { min: parseFloat(match[1]), max: parseFloat(match[2]) };
+                const btName = batterySlots[slotIdx]?.type;
+                if (btName) {
+                    const typeData = batteryTypes.find(t => t.name === btName);
+                    const std = typeData?.standards.find(s => s.paramKey === item.numericStdKey);
+                    if (std) {
+                        return { min: std.minValue ?? undefined, max: std.maxValue ?? undefined };
                     }
                 }
             }
@@ -236,9 +253,9 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     );
 
     const operatorName = useMemo(() => {
-        if (!operatorId) return '';
-        return operatorList.find(o => o.id === operatorId)?.name ?? '';
-    }, [operatorId, operatorList]);
+        if (!operatorEmpId) return '';
+        return operatorList.find(o => o.empId === operatorEmpId)?.name ?? '';
+    }, [operatorEmpId, operatorList]);
 
     // ===== RENDER HELPERS =====
 
@@ -337,7 +354,7 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
 
     // ===== SUBMIT =====
     const handleSubmit = useCallback(async () => {
-        if (!formDef || !operatorId) {
+        if (!formDef || !operatorEmpId) {
             alert('Harap lengkapi data operator terlebih dahulu.');
             return;
         }
@@ -345,12 +362,12 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
         const payload: FormSubmissionPayload = {
             formId: formDef.id,
             tanggal: tanggal.toISOString(),
-            line: line ?? 0,
-            shift: shift ?? 0,
-            operatorId: operatorId,
-            leaderId: hierarchyIds.leaderId,
-            kasubsieId: hierarchyIds.kasubsieId,
-            kasieId: hierarchyIds.kasieId,
+            lineId: lineId,
+            shiftId: shiftId,
+            operatorEmpId: operatorEmpId,
+            leaderEmpId: hierarchyIds.leaderEmpId,
+            kasubsieEmpId: hierarchyIds.kasubsieEmpId,
+            kasieEmpId: hierarchyIds.kasieEmpId,
             batterySlotsJson: JSON.stringify(batterySlots),
             checkValues: Object.entries(settings)
                 .filter(([, v]) => v !== undefined)
@@ -373,7 +390,7 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
             console.error('Submit error:', err);
             alert('Gagal menyimpan. Lihat console untuk detail.');
         }
-    }, [formDef, tanggal, line, shift, operatorId, hierarchyIds, batterySlots, settings, problems, problemColumns, signatures, signatureSlots]);
+    }, [formDef, tanggal, lineId, shiftId, operatorEmpId, hierarchyIds, batterySlots, settings, problems, problemColumns, signatures, signatureSlots]);
 
     // ===== MAIN RENDER =====
     if (loading || !formDef) {
@@ -438,23 +455,27 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                         <td className="info-value">
                                             <div className="line-shift-row">
                                                 <SelectBox
-                                                    items={lineList}
-                                                    value={line}
-                                                    onValueChanged={(e) => setLine(e.value)}
+                                                    dataSource={lineList}
+                                                    valueExpr="id"
+                                                    displayExpr="name"
+                                                    value={lineId}
+                                                    onValueChanged={(e) => setLineId(e.value)}
                                                     placeholder="Line"
                                                     stylingMode="underlined"
                                                     height={30}
-                                                    width={90}
+                                                    width={120}
                                                 />
                                                 <span className="separator">/</span>
                                                 <SelectBox
-                                                    items={shiftList}
-                                                    value={shift}
-                                                    onValueChanged={(e) => setShift(e.value)}
+                                                    dataSource={shiftList}
+                                                    valueExpr="id"
+                                                    displayExpr="name"
+                                                    value={shiftId}
+                                                    onValueChanged={(e) => setShiftId(e.value)}
                                                     placeholder="Shift"
                                                     stylingMode="underlined"
                                                     height={30}
-                                                    width={90}
+                                                    width={120}
                                                 />
                                             </div>
                                         </td>
@@ -466,8 +487,8 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                             <SelectBox
                                                 dataSource={operatorList}
                                                 displayExpr="name"
-                                                valueExpr="id"
-                                                value={operatorId}
+                                                valueExpr="empId"
+                                                value={operatorEmpId}
                                                 onValueChanged={handleOperatorChange}
                                                 searchEnabled={true}
                                                 searchMode="contains"

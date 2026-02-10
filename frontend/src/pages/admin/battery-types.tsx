@@ -1,47 +1,48 @@
 import { useEffect, useState, useCallback } from 'react';
 import TabPanel, { Item as TabItem } from 'devextreme-react/tab-panel';
-import DataGrid, { Column, Editing, Paging, Lookup } from 'devextreme-react/data-grid';
+import DataGrid, { Column, Editing, Paging, Lookup, FilterRow } from 'devextreme-react/data-grid';
 import LoadPanel from 'devextreme-react/load-panel';
 import notify from 'devextreme/ui/notify';
 import {
   adminGetBatteryTypes,
   adminCreateBatteryType, adminUpdateBatteryType, adminDeleteBatteryType,
-  adminCreateBatteryMold, adminUpdateBatteryMold, adminDeleteBatteryMold,
   adminCreateBatteryStandard, adminUpdateBatteryStandard, adminDeleteBatteryStandard,
+  adminGetMolds,
   type AdminBatteryTypeDto, type BatteryStandardDto,
 } from '../../api/cos-api';
-
-interface FlatMold {
-  id: number;
-  name: string;
-  batteryTypeId: number;
-  batteryTypeName: string;
-}
 
 interface FlatStandard extends BatteryStandardDto {
   batteryTypeName: string;
 }
 
+interface MoldRow {
+  moldCode: string;
+  moldDescription: string;
+  moldStatus: string;
+  idSection: number | null;
+}
+
 export function BatteryTypesPage() {
   const [batteryTypes, setBatteryTypes] = useState<AdminBatteryTypeDto[]>([]);
-  const [flatMolds, setFlatMolds] = useState<FlatMold[]>([]);
   const [flatStandards, setFlatStandards] = useState<FlatStandard[]>([]);
+  const [molds, setMolds] = useState<MoldRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const types = await adminGetBatteryTypes();
+      const [types, moldData] = await Promise.all([
+        adminGetBatteryTypes(),
+        adminGetMolds(),
+      ]);
       setBatteryTypes(types);
 
-      const molds: FlatMold[] = [];
       const stds: FlatStandard[] = [];
       types.forEach(bt => {
-        bt.molds.forEach(m => molds.push({ ...m, batteryTypeName: bt.name }));
         bt.standards.forEach(s => stds.push({ ...s, batteryTypeName: bt.name }));
       });
-      setFlatMolds(molds);
       setFlatStandards(stds);
+      setMolds(moldData);
     } catch (e) {
       console.error(e);
       notify('Failed to load battery types', 'error', 3000);
@@ -72,28 +73,6 @@ export function BatteryTypesPage() {
       notify('Battery type deleted', 'success', 1500);
       loadData();
     } catch { notify('Failed to delete battery type', 'error', 3000); }
-  };
-
-  // ═══════════ MOLDS ═══════════
-  const onMoldInserted = async (e: { data: FlatMold }) => {
-    try {
-      await adminCreateBatteryMold({ name: e.data.name, batteryTypeId: e.data.batteryTypeId });
-      notify('Mold created', 'success', 1500);
-      loadData();
-    } catch { notify('Failed to create mold', 'error', 3000); }
-  };
-  const onMoldUpdated = async (e: { data: FlatMold }) => {
-    try {
-      await adminUpdateBatteryMold(e.data.id, { name: e.data.name });
-      notify('Mold updated', 'success', 1500);
-    } catch { notify('Failed to update mold', 'error', 3000); }
-  };
-  const onMoldRemoved = async (e: { data: FlatMold }) => {
-    try {
-      await adminDeleteBatteryMold(e.data.id);
-      notify('Mold deleted', 'success', 1500);
-      loadData();
-    } catch { notify('Failed to delete mold', 'error', 3000); }
   };
 
   // ═══════════ STANDARDS ═══════════
@@ -154,13 +133,6 @@ export function BatteryTypesPage() {
               <Column dataField="id" caption="ID" width={60} allowEditing={false} />
               <Column dataField="name" caption="Nama Type Battery" />
               <Column
-                caption="Jumlah Mold"
-                allowEditing={false}
-                calculateCellValue={(row: AdminBatteryTypeDto) => row.molds?.length ?? 0}
-                width={100}
-                alignment="center"
-              />
-              <Column
                 caption="Jumlah Standard"
                 allowEditing={false}
                 calculateCellValue={(row: AdminBatteryTypeDto) => row.standards?.length ?? 0}
@@ -171,25 +143,18 @@ export function BatteryTypesPage() {
           </div>
         </TabItem>
 
-        {/* ═══════════ MOLDS TAB ═══════════ */}
-        <TabItem title={`Molds (${flatMolds.length})`}>
+        {/* ═══════════ MOLDS TAB (read-only, master data) ═══════════ */}
+        <TabItem title={`Molds (${molds.length})`}>
           <div style={{ padding: 16 }}>
-            <DataGrid
-              dataSource={flatMolds}
-              keyExpr="id"
-              showBorders
-              columnAutoWidth
-              onRowInserted={onMoldInserted}
-              onRowUpdated={onMoldUpdated}
-              onRowRemoved={onMoldRemoved}
-            >
-              <Editing mode="row" allowUpdating allowAdding allowDeleting />
+            <p style={{ color: '#888', fontSize: 13, marginBottom: 12 }}>
+              Data mold berasal dari master data (tlkp_mold) — read-only.
+            </p>
+            <DataGrid dataSource={molds} keyExpr="moldCode" showBorders columnAutoWidth>
+              <FilterRow visible />
               <Paging defaultPageSize={30} />
-              <Column dataField="id" caption="ID" width={60} allowEditing={false} />
-              <Column dataField="batteryTypeId" caption="Battery Type">
-                <Lookup dataSource={btLookup} valueExpr="id" displayExpr="name" />
-              </Column>
-              <Column dataField="name" caption="Nama Mold" />
+              <Column dataField="moldCode" caption="Kode Mold" width={120} />
+              <Column dataField="moldDescription" caption="Deskripsi" />
+              <Column dataField="moldStatus" caption="Status" width={80} />
             </DataGrid>
           </div>
         </TabItem>
@@ -207,6 +172,7 @@ export function BatteryTypesPage() {
               onRowRemoved={onStdRemoved}
             >
               <Editing mode="row" allowUpdating allowAdding allowDeleting />
+              <FilterRow visible />
               <Paging defaultPageSize={50} />
               <Column dataField="id" caption="ID" width={60} allowEditing={false} />
               <Column dataField="batteryTypeId" caption="Battery Type">

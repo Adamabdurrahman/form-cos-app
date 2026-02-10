@@ -36,7 +36,6 @@ import './form-editor.scss';
 interface BatteryTypeWithStandards {
   id: number;
   name: string;
-  molds: { id: number; name: string }[];
   standards: BatteryStandardDto[];
 }
 
