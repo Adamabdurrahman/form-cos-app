@@ -9,13 +9,17 @@ import {
     getBatteryTypes,
     getLines,
     getShifts,
-    getCheckItems,
     getHierarchy,
-    submitCosValidation,
+    getFormDefinitionByCode,
+    submitFormSubmission,
     type OperatorDto,
     type BatteryTypeDto,
     type CheckItemDto,
     type SubRowDto,
+    type FormDefinitionDto,
+    type FormProblemColumnDto,
+    type FormSignatureSlotDto,
+    type FormSubmissionPayload,
 } from '../../api/cos-api';
 import SignaturePad from '../../components/signature-pad/SignaturePad';
 import gsLogo from '../../assets/GS.png';
@@ -25,12 +29,7 @@ import './cos-validation.scss';
 
 interface ProblemRow {
     id: number;
-    item: string;
-    masalah: string;
-    tindakan: string;
-    waktu: string;
-    menit: number | null;
-    pic: string;
+    [key: string]: unknown;
 }
 
 interface BatterySlot {
@@ -40,13 +39,15 @@ interface BatterySlot {
 
 // ====================== COMPONENT ======================
 
-export function CosValidation() {
+export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: string }) {
+    // ===== FORM DEFINITION (from DB) =====
+    const [formDef, setFormDef] = useState<FormDefinitionDto | null>(null);
+
     // ===== REFERENCE DATA (from API) =====
     const [operatorList, setOperatorList] = useState<OperatorDto[]>([]);
     const [lineList, setLineList] = useState<number[]>([]);
     const [shiftList, setShiftList] = useState<number[]>([]);
     const [batteryTypes, setBatteryTypes] = useState<BatteryTypeDto[]>([]);
-    const [checkItemsList, setCheckItemsList] = useState<CheckItemDto[]>([]);
     const [loading, setLoading] = useState(true);
 
     // ===== HEADER STATE =====
@@ -54,57 +55,66 @@ export function CosValidation() {
     const [line, setLine] = useState<number | null>(null);
     const [shift, setShift] = useState<number | null>(null);
     const [operatorId, setOperatorId] = useState<number | null>(null);
-    const [leaderName, setLeaderName] = useState('');
-    const [kasubsieName, setKasubsieName] = useState('');
-    const [kasieName, setKasieName] = useState('');
+    const [hierarchyIds, setHierarchyIds] = useState<{ leaderId?: number; kasubsieId?: number; kasieId?: number }>({});
+    const [hierarchyNames, setHierarchyNames] = useState<Record<string, string>>({});
 
-    // ===== BATTERY SLOTS =====
-    const [batterySlots, setBatterySlots] = useState<BatterySlot[]>([
-        { type: null, mold: null },
-        { type: null, mold: null },
-        { type: null, mold: null },
-    ]);
+    // ===== BATTERY SLOTS (dynamic count from formDef) =====
+    const [batterySlots, setBatterySlots] = useState<BatterySlot[]>([]);
 
     // ===== SETTINGS (check item values) =====
     const [settings, setSettings] = useState<Record<string, unknown>>({});
 
     // ===== PROBLEMS =====
-    const [problems, setProblems] = useState<ProblemRow[]>([
-        { id: 1, item: '', masalah: '', tindakan: '', waktu: '', menit: null, pic: '' },
-    ]);
+    const [problems, setProblems] = useState<ProblemRow[]>([]);
 
     // ===== SIGNATURES =====
-    const [signatures, setSignatures] = useState<Record<string, string | null>>({
-        operator: null,
-        leader: null,
-        kasubsie: null,
-        kasie: null,
-    });
+    const [signatures, setSignatures] = useState<Record<string, string | null>>({});
 
-    // ===== LOAD REFERENCE DATA FROM API =====
+    // ===== DERIVED DATA =====
+    const checkItems = formDef?.checkItems ?? [];
+    const problemColumns: FormProblemColumnDto[] = formDef?.problemColumns ?? [];
+    const signatureSlots: FormSignatureSlotDto[] = formDef?.signatureSlots ?? [];
+    const slotCount = formDef?.slotCount ?? 3;
+
+    // ===== LOAD DATA =====
     useEffect(() => {
         async function loadData() {
             try {
-                const [ops, lines, shifts, btypes, citems] = await Promise.all([
+                const [ops, lines, shifts, btypes, fd] = await Promise.all([
                     getOperators(),
                     getLines(),
                     getShifts(),
                     getBatteryTypes(),
-                    getCheckItems(),
+                    getFormDefinitionByCode(formCode),
                 ]);
                 setOperatorList(ops);
                 setLineList(lines);
                 setShiftList(shifts);
                 setBatteryTypes(btypes);
-                setCheckItemsList(citems);
+                setFormDef(fd);
+
+                // Initialize battery slots based on form definition
+                setBatterySlots(Array.from({ length: fd.slotCount }, () => ({ type: null, mold: null })));
+
+                // Initialize problems with one empty row
+                const emptyRow: ProblemRow = { id: Date.now() };
+                fd.problemColumns.forEach(col => {
+                    emptyRow[col.columnKey] = col.fieldType === 'number' ? null : '';
+                });
+                setProblems([emptyRow]);
+
+                // Initialize signatures
+                const sigs: Record<string, string | null> = {};
+                fd.signatureSlots.forEach(slot => { sigs[slot.roleKey] = null; });
+                setSignatures(sigs);
             } catch (err) {
-                console.error('Failed to load reference data:', err);
+                console.error('Failed to load data:', err);
             } finally {
                 setLoading(false);
             }
         }
         loadData();
-    }, []);
+    }, [formCode]);
 
     // ===== HANDLERS =====
     const handleOperatorChange = useCallback((e: { value?: number }) => {
@@ -112,18 +122,24 @@ export function CosValidation() {
         setOperatorId(opId);
         if (opId) {
             getHierarchy(opId).then(h => {
-                setLeaderName(h.leader?.name ?? '');
-                setKasubsieName(h.kasubsie?.name ?? '');
-                setKasieName(h.kasie?.name ?? '');
+                setHierarchyIds({
+                    leaderId: h.leader?.id,
+                    kasubsieId: h.kasubsie?.id,
+                    kasieId: h.kasie?.id,
+                });
+                setHierarchyNames({
+                    operator: h.operator?.name ?? '',
+                    leader: h.leader?.name ?? '',
+                    kasubsie: h.kasubsie?.name ?? '',
+                    kasie: h.kasie?.name ?? '',
+                });
             }).catch(() => {
-                setLeaderName('');
-                setKasubsieName('');
-                setKasieName('');
+                setHierarchyIds({});
+                setHierarchyNames({});
             });
         } else {
-            setLeaderName('');
-            setKasubsieName('');
-            setKasieName('');
+            setHierarchyIds({});
+            setHierarchyNames({});
         }
     }, []);
 
@@ -141,17 +157,18 @@ export function CosValidation() {
     }, []);
 
     const addProblemRow = useCallback(() => {
-        setProblems(prev => [
-            ...prev,
-            { id: Date.now(), item: '', masalah: '', tindakan: '', waktu: '', menit: null, pic: '' },
-        ]);
-    }, []);
+        const row: ProblemRow = { id: Date.now() };
+        problemColumns.forEach(col => {
+            row[col.columnKey] = col.fieldType === 'number' ? null : '';
+        });
+        setProblems(prev => [...prev, row]);
+    }, [problemColumns]);
 
     const removeProblemRow = useCallback((id: number) => {
         setProblems(prev => prev.length > 1 ? prev.filter(p => p.id !== id) : prev);
     }, []);
 
-    const updateProblem = useCallback((id: number, field: keyof ProblemRow, value: unknown) => {
+    const updateProblem = useCallback((id: number, field: string, value: unknown) => {
         setProblems(prev =>
             prev.map(p => (p.id === id ? { ...p, [field]: value } : p))
         );
@@ -166,7 +183,7 @@ export function CosValidation() {
         const bt = batterySlots[slotIdx]?.type;
         if (!bt) return [];
         return batteryTypes.find(t => t.name === bt)?.molds ?? [];
-    }, [batterySlots]);
+    }, [batterySlots, batteryTypes]);
 
     const getStandard = useCallback(
         (item: CheckItemDto, subRow: SubRowDto | null, slotIdx: number): string => {
@@ -181,43 +198,97 @@ export function CosValidation() {
         [batterySlots, batteryTypes]
     );
 
+    // Get min/max for a check item at a specific slot
+    const getMinMax = useCallback(
+        (item: CheckItemDto, subRow: SubRowDto | null, slotIdx: number): { min?: number; max?: number } => {
+            // Sub-row level fixed min/max takes priority
+            if (subRow?.fixedMin != null || subRow?.fixedMax != null) {
+                return { min: subRow?.fixedMin ?? undefined, max: subRow?.fixedMax ?? undefined };
+            }
+            // Item level fixed min/max
+            if (item.fixedMin != null || item.fixedMax != null) {
+                return { min: item.fixedMin ?? undefined, max: item.fixedMax ?? undefined };
+            }
+            // Battery-type-dependent standards — look up from batteryTypes
+            if (item.numericStdKey) {
+                const bt = batterySlots[slotIdx]?.type;
+                if (bt) {
+                    const typeData = batteryTypes.find(t => t.name === bt);
+                    const stdStr = typeData?.standards[item.numericStdKey] ?? '';
+                    if (stdStr && stdStr !== '-') {
+                        const match = stdStr.match(/([\d.]+)\s*-\s*([\d.]+)/);
+                        if (match) return { min: parseFloat(match[1]), max: parseFloat(match[2]) };
+                    }
+                }
+            }
+            return {};
+        },
+        [batterySlots, batteryTypes]
+    );
+
+    const isOutOfRange = useCallback(
+        (value: number | null | undefined, min?: number, max?: number): boolean => {
+            if (value == null) return false;
+            if (min != null && value < min) return true;
+            if (max != null && value > max) return true;
+            return false;
+        }, []
+    );
+
     const operatorName = useMemo(() => {
         if (!operatorId) return '';
         return operatorList.find(o => o.id === operatorId)?.name ?? '';
-    }, [operatorId]);
+    }, [operatorId, operatorList]);
 
     // ===== RENDER HELPERS =====
 
     function renderSettingInput(item: CheckItemDto, subRow: SubRowDto | null, slotIdx: number) {
         const key = subRow?.suffix
-            ? `${item.id}_${subRow.suffix}_${slotIdx}`
-            : `${item.id}_${slotIdx}`;
+            ? `${item.itemKey}_${subRow.suffix}_${slotIdx}`
+            : `${item.itemKey}_${slotIdx}`;
 
         if (!batterySlots[slotIdx]?.type) {
             return <span className="empty-cell">—</span>;
         }
 
         if (item.type === 'visual') {
-            const val = settings[key] as ('ok' | 'ng' | undefined);
-            const cycle = () => {
-                if (!val) updateSetting(key, 'ok');
-                else if (val === 'ok') updateSetting(key, 'ng');
-                else updateSetting(key, undefined);
-            };
+            const val = (settings[key] as ('ok' | 'ng' | undefined)) ?? 'ok';
+            if (settings[key] === undefined) {
+                updateSetting(key, 'ok');
+            }
             return (
-                <div className={`visual-check-btn ${val ?? 'empty'}`} onClick={cycle} title="Klik untuk ubah">
-                    {val === 'ok' ? '✓' : val === 'ng' ? '✗' : '—'}
+                <div className="visual-check-pair">
+                    <div
+                        className={`visual-btn ng-btn ${val === 'ng' ? 'active' : ''}`}
+                        onClick={() => updateSetting(key, 'ng')}
+                        title="NG"
+                    >
+                        ✗
+                    </div>
+                    <div
+                        className={`visual-btn ok-btn ${val === 'ok' ? 'active' : ''}`}
+                        onClick={() => updateSetting(key, 'ok')}
+                        title="OK"
+                    >
+                        ✓
+                    </div>
                 </div>
             );
         }
 
+        // Numeric input with out-of-range validation
+        const numVal = settings[key] as number | null | undefined;
+        const { min, max } = getMinMax(item, subRow, slotIdx);
+        const outOfRange = isOutOfRange(numVal ?? null, min, max);
+
         return (
             <NumberBox
-                value={(settings[key] as number) ?? undefined}
+                value={numVal ?? undefined}
                 onValueChanged={(e) => updateSetting(key, e.value)}
                 stylingMode="underlined"
                 height={26}
                 showSpinButtons={false}
+                className={outOfRange ? 'out-of-range' : ''}
             />
         );
     }
@@ -227,30 +298,29 @@ export function CosValidation() {
             ? item.subRows
             : null;
         const hasSubRows = !!rows;
-        const rowList = rows ?? [null];
+        const rowList: (SubRowDto | null)[] = rows ?? [null];
         const rowCount = rowList.length;
 
         return rowList.map((subRow, subIdx) => (
-            <tr key={`${item.id}_${subRow?.suffix ?? 'main'}`} className="check-row">
-                {/* Item name */}
+            <tr key={`${item.itemKey}_${subRow?.suffix ?? 'main'}`} className="check-row">
                 {subIdx === 0 && hasSubRows && (
                     <td rowSpan={rowCount} className="item-name-cell">{item.label}</td>
                 )}
                 {!hasSubRows && (
                     <td colSpan={2} className="item-name-cell">{item.label}</td>
                 )}
-                {/* Sub-row label */}
                 {hasSubRows && (
                     <td className="sub-label-cell">{subRow?.label}</td>
                 )}
-                {/* 3 battery slots: Standar + Setting */}
-                {[0, 1, 2].map(slotIdx => (
+                {/* Dynamic battery slots */}
+                {Array.from({ length: slotCount }, (_, slotIdx) => (
                     <React.Fragment key={slotIdx}>
                         <td className="standard-cell">{getStandard(item, subRow, slotIdx)}</td>
-                        <td className="setting-cell">{renderSettingInput(item, subRow, slotIdx)}</td>
+                        <td className={`setting-cell${item.type === 'visual' && batterySlots[slotIdx]?.type ? ' visual-setting' : ''}`}>
+                            {renderSettingInput(item, subRow, slotIdx)}
+                        </td>
                     </React.Fragment>
                 ))}
-                {/* Frequency + Keterangan (only first sub-row) */}
                 {subIdx === 0 && (
                     <>
                         <td rowSpan={hasSubRows ? rowCount : undefined} className="frequency-cell">
@@ -265,13 +335,51 @@ export function CosValidation() {
         ));
     }
 
+    // ===== SUBMIT =====
+    const handleSubmit = useCallback(async () => {
+        if (!formDef || !operatorId) {
+            alert('Harap lengkapi data operator terlebih dahulu.');
+            return;
+        }
+
+        const payload: FormSubmissionPayload = {
+            formId: formDef.id,
+            tanggal: tanggal.toISOString(),
+            line: line ?? 0,
+            shift: shift ?? 0,
+            operatorId: operatorId,
+            leaderId: hierarchyIds.leaderId,
+            kasubsieId: hierarchyIds.kasubsieId,
+            kasieId: hierarchyIds.kasieId,
+            batterySlotsJson: JSON.stringify(batterySlots),
+            checkValues: Object.entries(settings)
+                .filter(([, v]) => v !== undefined)
+                .map(([k, v]) => ({ settingKey: k, value: v != null ? String(v) : null })),
+            problems: problems.map((p, idx) => {
+                const vals: Record<string, unknown> = {};
+                problemColumns.forEach(col => { vals[col.columnKey] = p[col.columnKey]; });
+                return { sortOrder: idx + 1, valuesJson: JSON.stringify(vals) };
+            }),
+            signatures: signatureSlots.map(slot => ({
+                roleKey: slot.roleKey,
+                signatureData: signatures[slot.roleKey] ?? null,
+            })),
+        };
+
+        try {
+            const result = await submitFormSubmission(payload);
+            alert(`Check Sheet berhasil disimpan! (ID: ${result.id})`);
+        } catch (err) {
+            console.error('Submit error:', err);
+            alert('Gagal menyimpan. Lihat console untuk detail.');
+        }
+    }, [formDef, tanggal, line, shift, operatorId, hierarchyIds, batterySlots, settings, problems, problemColumns, signatures, signatureSlots]);
+
     // ===== MAIN RENDER =====
-    if (loading) {
+    if (loading || !formDef) {
         return (
             <div className="cos-form-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-                <div style={{ textAlign: 'center' }}>
-                    <p>Memuat data...</p>
-                </div>
+                <p>Memuat data...</p>
             </div>
         );
     }
@@ -287,39 +395,20 @@ export function CosValidation() {
                                 <img src={gsLogo} alt="PT. GS Battery" className="gs-logo" />
                             </div>
                             <div className="header-center">
-                                <h3 className="form-title">VALIDASI PROSES COS</h3>
-                                <div className="form-id">Form-A2 1-K.051-5-2</div>
+                                <h3 className="form-title">{formDef.title}</h3>
+                                <div className="form-id">{formDef.subtitle}</div>
                             </div>
                             <div className="header-right">
                                 <div className="approval-section">
-                                    <div className="approval-box">
-                                        <SignaturePad
-                                            label="Dibuat"
-                                            name={operatorName || 'Operator'}
-                                            onChange={(d) => updateSignature('operator', d)}
-                                        />
-                                    </div>
-                                    <div className="approval-box">
-                                        <SignaturePad
-                                            label="Diperiksa"
-                                            name={leaderName || 'Leader'}
-                                            onChange={(d) => updateSignature('leader', d)}
-                                        />
-                                    </div>
-                                    <div className="approval-box">
-                                        <SignaturePad
-                                            label="Diketahui"
-                                            name={kasubsieName || 'Kasubsie'}
-                                            onChange={(d) => updateSignature('kasubsie', d)}
-                                        />
-                                    </div>
-                                    <div className="approval-box">
-                                        <SignaturePad
-                                            label="Disetujui"
-                                            name={kasieName || 'Kasie'}
-                                            onChange={(d) => updateSignature('kasie', d)}
-                                        />
-                                    </div>
+                                    {signatureSlots.map(slot => (
+                                        <div className="approval-box" key={slot.roleKey}>
+                                            <SignaturePad
+                                                label={slot.label}
+                                                name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey}
+                                                onChange={(d) => updateSignature(slot.roleKey, d)}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -394,33 +483,32 @@ export function CosValidation() {
                             </table>
                         </div>
 
-                        {/* ==================== SECTION A: VALIDASI COS ==================== */}
+                        {/* ==================== SECTION A: CHECK TABLE ==================== */}
                         <div className="section-a">
                             <div className="section-title">A. VALIDASI COS</div>
                             <div className="table-scroll-wrapper">
                                 <table className="cos-table">
                                     <colgroup>
-                                        <col style={{ width: '160px' }} /> {/* Item Check */}
-                                        <col style={{ width: '40px' }} />  {/* Sub-label */}
-                                        <col style={{ width: '85px' }} />   {/* Std 1 */}
-                                        <col style={{ width: '80px' }} />   {/* Set 1 */}
-                                        <col style={{ width: '85px' }} />   {/* Std 2 */}
-                                        <col style={{ width: '80px' }} />   {/* Set 2 */}
-                                        <col style={{ width: '85px' }} />   {/* Std 3 */}
-                                        <col style={{ width: '80px' }} />   {/* Set 3 */}
-                                        <col style={{ width: '100px' }} />  {/* Frekuensi */}
-                                        <col style={{ width: '100px' }} />  {/* Ket */}
+                                        <col style={{ width: '160px' }} />
+                                        <col style={{ width: '40px' }} />
+                                        {Array.from({ length: slotCount }, (_, i) => (
+                                            <React.Fragment key={i}>
+                                                <col style={{ width: '85px' }} />
+                                                <col style={{ width: '80px' }} />
+                                            </React.Fragment>
+                                        ))}
+                                        <col style={{ width: '100px' }} />
+                                        <col style={{ width: '100px' }} />
                                     </colgroup>
                                     <thead>
-                                        {/* Row 1: TYPE BATTERY + Battery selectors */}
                                         <tr>
                                             <th colSpan={2} rowSpan={2} className="header-item">ITEM CHECK</th>
-                                            {[0, 1, 2].map(slotIdx => (
+                                            {Array.from({ length: slotCount }, (_, slotIdx) => (
                                                 <th colSpan={2} key={`type_${slotIdx}`} className="header-type">
                                                     <div className="type-header-label">TYPE BATTERY</div>
                                                     <SelectBox
                                                         items={batteryTypes.map(t => t.name)}
-                                                        value={batterySlots[slotIdx].type}
+                                                        value={batterySlots[slotIdx]?.type ?? null}
                                                         onValueChanged={(e) => updateSlot(slotIdx, 'type', e.value)}
                                                         placeholder={`Type ${slotIdx + 1}`}
                                                         stylingMode="underlined"
@@ -433,28 +521,26 @@ export function CosValidation() {
                                             <th rowSpan={2} className="header-freq">FREKUENSI</th>
                                             <th rowSpan={2} className="header-ket">KET</th>
                                         </tr>
-                                        {/* Row 2: Standar | Setting headers */}
                                         <tr>
-                                            {[0, 1, 2].map(slotIdx => (
+                                            {Array.from({ length: slotCount }, (_, slotIdx) => (
                                                 <React.Fragment key={`hdr_${slotIdx}`}>
                                                     <th className="header-std">Standar</th>
                                                     <th className="header-set">Setting</th>
                                                 </React.Fragment>
                                             ))}
                                         </tr>
-                                        {/* Row 3: NO MOLD + Mold selectors */}
                                         <tr>
                                             <th colSpan={2} className="header-mold-label">NO MOLD</th>
-                                            {[0, 1, 2].map(slotIdx => (
+                                            {Array.from({ length: slotCount }, (_, slotIdx) => (
                                                 <th colSpan={2} key={`mold_${slotIdx}`} className="header-mold">
                                                     <SelectBox
                                                         items={getMoldsForSlot(slotIdx)}
-                                                        value={batterySlots[slotIdx].mold}
+                                                        value={batterySlots[slotIdx]?.mold ?? null}
                                                         onValueChanged={(e) => updateSlot(slotIdx, 'mold', e.value)}
                                                         placeholder="Mold"
                                                         stylingMode="underlined"
                                                         height={26}
-                                                        disabled={!batterySlots[slotIdx].type}
+                                                        disabled={!batterySlots[slotIdx]?.type}
                                                         showClearButton={true}
                                                     />
                                                 </th>
@@ -464,25 +550,22 @@ export function CosValidation() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {checkItemsList.map(item => renderCheckItemRows(item))}
+                                        {checkItems.map(item => renderCheckItemRows(item))}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
-                        {/* ==================== SECTION B: PROBLEM ==================== */}
+                        {/* ==================== SECTION B: PROBLEM (DYNAMIC COLUMNS) ==================== */}
                         <div className="section-b">
                             <div className="section-title">B. PROBLEM</div>
                             <table className="problems-table">
                                 <thead>
                                     <tr>
                                         <th style={{ width: '30px' }}>No</th>
-                                        <th style={{ width: '120px' }}>ITEM</th>
-                                        <th style={{ width: '200px' }}>MASALAH</th>
-                                        <th style={{ width: '200px' }}>TINDAKAN</th>
-                                        <th style={{ width: '80px' }}>WAKTU</th>
-                                        <th style={{ width: '60px' }}>MENIT</th>
-                                        <th style={{ width: '100px' }}>PIC</th>
+                                        {problemColumns.map(col => (
+                                            <th key={col.columnKey} style={{ width: col.width }}>{col.label}</th>
+                                        ))}
                                         <th style={{ width: '40px' }}></th>
                                     </tr>
                                 </thead>
@@ -490,56 +573,26 @@ export function CosValidation() {
                                     {problems.map((prob, idx) => (
                                         <tr key={prob.id}>
                                             <td className="problem-no">{idx + 1}</td>
-                                            <td>
-                                                <TextBox
-                                                    value={prob.item}
-                                                    onValueChanged={(e) => updateProblem(prob.id, 'item', e.value)}
-                                                    stylingMode="underlined"
-                                                    height={28}
-                                                />
-                                            </td>
-                                            <td>
-                                                <TextBox
-                                                    value={prob.masalah}
-                                                    onValueChanged={(e) => updateProblem(prob.id, 'masalah', e.value)}
-                                                    stylingMode="underlined"
-                                                    height={28}
-                                                />
-                                            </td>
-                                            <td>
-                                                <TextBox
-                                                    value={prob.tindakan}
-                                                    onValueChanged={(e) => updateProblem(prob.id, 'tindakan', e.value)}
-                                                    stylingMode="underlined"
-                                                    height={28}
-                                                />
-                                            </td>
-                                            <td>
-                                                <TextBox
-                                                    value={prob.waktu}
-                                                    onValueChanged={(e) => updateProblem(prob.id, 'waktu', e.value)}
-                                                    stylingMode="underlined"
-                                                    height={28}
-                                                    placeholder="HH:mm"
-                                                />
-                                            </td>
-                                            <td>
-                                                <NumberBox
-                                                    value={prob.menit ?? undefined}
-                                                    onValueChanged={(e) => updateProblem(prob.id, 'menit', e.value)}
-                                                    stylingMode="underlined"
-                                                    height={28}
-                                                    min={0}
-                                                />
-                                            </td>
-                                            <td>
-                                                <TextBox
-                                                    value={prob.pic}
-                                                    onValueChanged={(e) => updateProblem(prob.id, 'pic', e.value)}
-                                                    stylingMode="underlined"
-                                                    height={28}
-                                                />
-                                            </td>
+                                            {problemColumns.map(col => (
+                                                <td key={col.columnKey}>
+                                                    {col.fieldType === 'number' ? (
+                                                        <NumberBox
+                                                            value={(prob[col.columnKey] as number) ?? undefined}
+                                                            onValueChanged={(e) => updateProblem(prob.id, col.columnKey, e.value)}
+                                                            stylingMode="underlined"
+                                                            height={28}
+                                                            min={0}
+                                                        />
+                                                    ) : (
+                                                        <TextBox
+                                                            value={(prob[col.columnKey] as string) ?? ''}
+                                                            onValueChanged={(e) => updateProblem(prob.id, col.columnKey, e.value)}
+                                                            stylingMode="underlined"
+                                                            height={28}
+                                                        />
+                                                    )}
+                                                </td>
+                                            ))}
                                             <td className="problem-action">
                                                 <Button
                                                     icon="trash"
@@ -572,55 +625,11 @@ export function CosValidation() {
                                 stylingMode="contained"
                                 width={200}
                                 height={36}
-                                onClick={async () => {
-                                    // Find leader/kasubsie/kasie IDs from hierarchy
-                                    let leaderId: number | undefined;
-                                    let kasubsieId: number | undefined;
-                                    let kasieId: number | undefined;
-                                    if (operatorId) {
-                                        try {
-                                            const h = await getHierarchy(operatorId);
-                                            leaderId = h.leader?.id;
-                                            kasubsieId = h.kasubsie?.id;
-                                            kasieId = h.kasie?.id;
-                                        } catch { /* ignore */ }
-                                    }
-
-                                    const payload = {
-                                        tanggal: tanggal.toISOString(),
-                                        line: line ?? 0,
-                                        shift: shift ?? 0,
-                                        operatorId: operatorId ?? 0,
-                                        leaderId,
-                                        kasubsieId,
-                                        kasieId,
-                                        batteryType1: batterySlots[0]?.type ?? undefined,
-                                        mold1: batterySlots[0]?.mold ?? undefined,
-                                        batteryType2: batterySlots[1]?.type ?? undefined,
-                                        mold2: batterySlots[1]?.mold ?? undefined,
-                                        batteryType3: batterySlots[2]?.type ?? undefined,
-                                        mold3: batterySlots[2]?.mold ?? undefined,
-                                        settings: Object.fromEntries(
-                                            Object.entries(settings)
-                                                .filter(([, v]) => v !== undefined)
-                                                .map(([k, v]) => [k, v != null ? String(v) : null])
-                                        ),
-                                        problems: problems.map(p => ({
-                                            problem: p.masalah || undefined,
-                                            action: p.tindakan || undefined,
-                                        })),
-                                        signatures,
-                                    };
-
-                                    try {
-                                        const result = await submitCosValidation(payload);
-                                        alert(`Check Sheet berhasil disimpan! (ID: ${result.id})`);
-                                    } catch (err) {
-                                        console.error('Submit error:', err);
-                                        alert('Gagal menyimpan. Lihat console untuk detail.');
-                                    }
-                                }}
+                                onClick={handleSubmit}
                             />
+                            <a href="/admin" className="admin-link" style={{ marginLeft: 16, fontSize: 12, opacity: 0.6 }}>
+                                Admin Panel &rarr;
+                            </a>
                         </div>
                     </div>
                 </div>

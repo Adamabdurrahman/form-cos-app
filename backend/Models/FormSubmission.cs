@@ -5,14 +5,17 @@ using System.Text.Json.Serialization;
 namespace backend.Models;
 
 /// <summary>
-/// A submitted COS validation form record.
+/// A submitted form record (generalized from CosValidation).
 /// </summary>
-[Table("cos_validation")]
-public class CosValidation
+[Table("form_submission")]
+public class FormSubmission
 {
     [Key]
     [Column("id")]
     public int Id { get; set; }
+
+    [Column("form_id")]
+    public int FormId { get; set; }
 
     [Column("tanggal")]
     public DateTime Tanggal { get; set; }
@@ -36,31 +39,11 @@ public class CosValidation
     public int? KasieId { get; set; }
 
     /// <summary>
-    /// Battery type & mold for slot 1
+    /// Battery slot assignments stored as JSON:
+    /// [{"type":"NS40ZL","mold":"COS-A01"},{"type":"NS60L","mold":"COS-B01"},...]
     /// </summary>
-    [MaxLength(100)]
-    [Column("battery_type_1")]
-    public string? BatteryType1 { get; set; }
-
-    [MaxLength(50)]
-    [Column("mold_1")]
-    public string? Mold1 { get; set; }
-
-    [MaxLength(100)]
-    [Column("battery_type_2")]
-    public string? BatteryType2 { get; set; }
-
-    [MaxLength(50)]
-    [Column("mold_2")]
-    public string? Mold2 { get; set; }
-
-    [MaxLength(100)]
-    [Column("battery_type_3")]
-    public string? BatteryType3 { get; set; }
-
-    [MaxLength(50)]
-    [Column("mold_3")]
-    public string? Mold3 { get; set; }
+    [Column("battery_slots_json")]
+    public string? BatterySlotsJson { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -69,6 +52,9 @@ public class CosValidation
     public DateTime? UpdatedAt { get; set; }
 
     // Navigation
+    [ForeignKey(nameof(FormId))]
+    public FormDefinition? Form { get; set; }
+
     [ForeignKey(nameof(OperatorId))]
     public Operator? Operator { get; set; }
 
@@ -81,7 +67,7 @@ public class CosValidation
     [ForeignKey(nameof(KasieId))]
     public Kasie? Kasie { get; set; }
 
-    public ICollection<CosCheckSetting> CheckSettings { get; set; } = new List<CosCheckSetting>();
-    public ICollection<CosProblem> Problems { get; set; } = new List<CosProblem>();
-    public ICollection<CosSignature> Signatures { get; set; } = new List<CosSignature>();
+    public ICollection<SubmissionCheckValue> CheckValues { get; set; } = new List<SubmissionCheckValue>();
+    public ICollection<SubmissionProblem> Problems { get; set; } = new List<SubmissionProblem>();
+    public ICollection<SubmissionSignature> Signatures { get; set; } = new List<SubmissionSignature>();
 }

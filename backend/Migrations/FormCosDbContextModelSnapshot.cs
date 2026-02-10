@@ -153,6 +153,14 @@ namespace backend.Migrations
                         .HasColumnType("int")
                         .HasColumnName("battery_type_id");
 
+                    b.Property<decimal?>("MaxValue")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("max_value");
+
+                    b.Property<decimal?>("MinValue")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("min_value");
+
                     b.Property<string>("ParamKey")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -191,6 +199,8 @@ namespace backend.Migrations
                         {
                             Id = 3,
                             BatteryTypeId = 3,
+                            MaxValue = 2.0m,
+                            MinValue = 1.0m,
                             ParamKey = "pourWait",
                             Value = "1.0 - 2.0"
                         },
@@ -212,6 +222,8 @@ namespace backend.Migrations
                         {
                             Id = 6,
                             BatteryTypeId = 6,
+                            MaxValue = 2.0m,
+                            MinValue = 1.0m,
                             ParamKey = "pourWait",
                             Value = "1.0 - 2.0"
                         },
@@ -226,6 +238,8 @@ namespace backend.Migrations
                         {
                             Id = 8,
                             BatteryTypeId = 2,
+                            MaxValue = 4.0m,
+                            MinValue = 2.5m,
                             ParamKey = "pourTime",
                             Value = "2.5 - 4.0"
                         },
@@ -233,6 +247,8 @@ namespace backend.Migrations
                         {
                             Id = 9,
                             BatteryTypeId = 3,
+                            MaxValue = 3.0m,
+                            MinValue = 1.5m,
                             ParamKey = "pourTime",
                             Value = "1.5 - 3.0"
                         },
@@ -240,6 +256,8 @@ namespace backend.Migrations
                         {
                             Id = 10,
                             BatteryTypeId = 4,
+                            MaxValue = 5.0m,
+                            MinValue = 3.0m,
                             ParamKey = "pourTime",
                             Value = "3.0 - 5.0"
                         },
@@ -247,6 +265,8 @@ namespace backend.Migrations
                         {
                             Id = 11,
                             BatteryTypeId = 5,
+                            MaxValue = 5.5m,
+                            MinValue = 3.5m,
                             ParamKey = "pourTime",
                             Value = "3.5 - 5.5"
                         },
@@ -254,6 +274,8 @@ namespace backend.Migrations
                         {
                             Id = 12,
                             BatteryTypeId = 6,
+                            MaxValue = 3.0m,
+                            MinValue = 1.5m,
                             ParamKey = "pourTime",
                             Value = "1.5 - 3.0"
                         },
@@ -268,6 +290,8 @@ namespace backend.Migrations
                         {
                             Id = 14,
                             BatteryTypeId = 2,
+                            MaxValue = 3.5m,
+                            MinValue = 2.0m,
                             ParamKey = "dipTime2",
                             Value = "2.0 - 3.5"
                         },
@@ -275,6 +299,8 @@ namespace backend.Migrations
                         {
                             Id = 15,
                             BatteryTypeId = 3,
+                            MaxValue = 2.5m,
+                            MinValue = 1.0m,
                             ParamKey = "dipTime2",
                             Value = "1.0 - 2.5"
                         },
@@ -282,6 +308,8 @@ namespace backend.Migrations
                         {
                             Id = 16,
                             BatteryTypeId = 4,
+                            MaxValue = 4.0m,
+                            MinValue = 2.5m,
                             ParamKey = "dipTime2",
                             Value = "2.5 - 4.0"
                         },
@@ -289,6 +317,8 @@ namespace backend.Migrations
                         {
                             Id = 17,
                             BatteryTypeId = 5,
+                            MaxValue = 4.5m,
+                            MinValue = 3.0m,
                             ParamKey = "dipTime2",
                             Value = "3.0 - 4.5"
                         },
@@ -296,6 +326,8 @@ namespace backend.Migrations
                         {
                             Id = 18,
                             BatteryTypeId = 6,
+                            MaxValue = 2.5m,
+                            MinValue = 1.0m,
                             ParamKey = "dipTime2",
                             Value = "1.0 - 2.5"
                         },
@@ -310,6 +342,8 @@ namespace backend.Migrations
                         {
                             Id = 20,
                             BatteryTypeId = 2,
+                            MaxValue = 3.0m,
+                            MinValue = 1.5m,
                             ParamKey = "dumpTime",
                             Value = "1.5 - 3.0"
                         },
@@ -317,6 +351,8 @@ namespace backend.Migrations
                         {
                             Id = 21,
                             BatteryTypeId = 3,
+                            MaxValue = 2.0m,
+                            MinValue = 0.8m,
                             ParamKey = "dumpTime",
                             Value = "0.8 - 2.0"
                         },
@@ -324,6 +360,8 @@ namespace backend.Migrations
                         {
                             Id = 22,
                             BatteryTypeId = 4,
+                            MaxValue = 3.5m,
+                            MinValue = 2.0m,
                             ParamKey = "dumpTime",
                             Value = "2.0 - 3.5"
                         },
@@ -331,6 +369,8 @@ namespace backend.Migrations
                         {
                             Id = 23,
                             BatteryTypeId = 5,
+                            MaxValue = 4.0m,
+                            MinValue = 2.5m,
                             ParamKey = "dumpTime",
                             Value = "2.5 - 4.0"
                         },
@@ -338,6 +378,8 @@ namespace backend.Migrations
                         {
                             Id = 24,
                             BatteryTypeId = 6,
+                            MaxValue = 2.0m,
+                            MinValue = 0.8m,
                             ParamKey = "dumpTime",
                             Value = "0.8 - 2.0"
                         },
@@ -352,6 +394,8 @@ namespace backend.Migrations
                         {
                             Id = 26,
                             BatteryTypeId = 2,
+                            MaxValue = 5.5m,
+                            MinValue = 3.5m,
                             ParamKey = "lugDryTime",
                             Value = "3.5 - 5.5"
                         },
@@ -359,6 +403,8 @@ namespace backend.Migrations
                         {
                             Id = 27,
                             BatteryTypeId = 3,
+                            MaxValue = 4.5m,
+                            MinValue = 2.5m,
                             ParamKey = "lugDryTime",
                             Value = "2.5 - 4.5"
                         },
@@ -366,6 +412,8 @@ namespace backend.Migrations
                         {
                             Id = 28,
                             BatteryTypeId = 4,
+                            MaxValue = 6.0m,
+                            MinValue = 4.0m,
                             ParamKey = "lugDryTime",
                             Value = "4.0 - 6.0"
                         },
@@ -373,6 +421,8 @@ namespace backend.Migrations
                         {
                             Id = 29,
                             BatteryTypeId = 5,
+                            MaxValue = 6.5m,
+                            MinValue = 4.5m,
                             ParamKey = "lugDryTime",
                             Value = "4.5 - 6.5"
                         },
@@ -380,6 +430,8 @@ namespace backend.Migrations
                         {
                             Id = 30,
                             BatteryTypeId = 6,
+                            MaxValue = 4.5m,
+                            MinValue = 2.5m,
                             ParamKey = "lugDryTime",
                             Value = "2.5 - 4.5"
                         },
@@ -394,6 +446,8 @@ namespace backend.Migrations
                         {
                             Id = 32,
                             BatteryTypeId = 2,
+                            MaxValue = 3.5m,
+                            MinValue = 1.5m,
                             ParamKey = "largeVibratorTime",
                             Value = "1.5 - 3.5"
                         },
@@ -401,6 +455,8 @@ namespace backend.Migrations
                         {
                             Id = 33,
                             BatteryTypeId = 3,
+                            MaxValue = 2.5m,
+                            MinValue = 0.8m,
                             ParamKey = "largeVibratorTime",
                             Value = "0.8 - 2.5"
                         },
@@ -408,6 +464,8 @@ namespace backend.Migrations
                         {
                             Id = 34,
                             BatteryTypeId = 4,
+                            MaxValue = 4.0m,
+                            MinValue = 2.0m,
                             ParamKey = "largeVibratorTime",
                             Value = "2.0 - 4.0"
                         },
@@ -415,6 +473,8 @@ namespace backend.Migrations
                         {
                             Id = 35,
                             BatteryTypeId = 5,
+                            MaxValue = 4.5m,
+                            MinValue = 2.5m,
                             ParamKey = "largeVibratorTime",
                             Value = "2.5 - 4.5"
                         },
@@ -422,6 +482,8 @@ namespace backend.Migrations
                         {
                             Id = 36,
                             BatteryTypeId = 6,
+                            MaxValue = 2.5m,
+                            MinValue = 0.8m,
                             ParamKey = "largeVibratorTime",
                             Value = "0.8 - 2.5"
                         },
@@ -436,6 +498,8 @@ namespace backend.Migrations
                         {
                             Id = 38,
                             BatteryTypeId = 2,
+                            MaxValue = 3.5m,
+                            MinValue = 1.5m,
                             ParamKey = "smallVibratorTime",
                             Value = "1.5 - 3.5"
                         },
@@ -443,6 +507,8 @@ namespace backend.Migrations
                         {
                             Id = 39,
                             BatteryTypeId = 3,
+                            MaxValue = 2.5m,
+                            MinValue = 0.8m,
                             ParamKey = "smallVibratorTime",
                             Value = "0.8 - 2.5"
                         },
@@ -450,6 +516,8 @@ namespace backend.Migrations
                         {
                             Id = 40,
                             BatteryTypeId = 4,
+                            MaxValue = 4.0m,
+                            MinValue = 2.0m,
                             ParamKey = "smallVibratorTime",
                             Value = "2.0 - 4.0"
                         },
@@ -457,6 +525,8 @@ namespace backend.Migrations
                         {
                             Id = 41,
                             BatteryTypeId = 5,
+                            MaxValue = 4.5m,
+                            MinValue = 2.5m,
                             ParamKey = "smallVibratorTime",
                             Value = "2.5 - 4.5"
                         },
@@ -464,6 +534,8 @@ namespace backend.Migrations
                         {
                             Id = 42,
                             BatteryTypeId = 6,
+                            MaxValue = 2.5m,
+                            MinValue = 0.8m,
                             ParamKey = "smallVibratorTime",
                             Value = "0.8 - 2.5"
                         },
@@ -478,6 +550,8 @@ namespace backend.Migrations
                         {
                             Id = 44,
                             BatteryTypeId = 2,
+                            MaxValue = 35m,
+                            MinValue = 25m,
                             ParamKey = "coolingTime",
                             Value = "25 - 35"
                         },
@@ -485,6 +559,8 @@ namespace backend.Migrations
                         {
                             Id = 45,
                             BatteryTypeId = 3,
+                            MaxValue = 28m,
+                            MinValue = 18m,
                             ParamKey = "coolingTime",
                             Value = "18 - 28"
                         },
@@ -492,6 +568,8 @@ namespace backend.Migrations
                         {
                             Id = 46,
                             BatteryTypeId = 4,
+                            MaxValue = 38m,
+                            MinValue = 28m,
                             ParamKey = "coolingTime",
                             Value = "28 - 38"
                         },
@@ -499,6 +577,8 @@ namespace backend.Migrations
                         {
                             Id = 47,
                             BatteryTypeId = 5,
+                            MaxValue = 42m,
+                            MinValue = 30m,
                             ParamKey = "coolingTime",
                             Value = "30 - 42"
                         },
@@ -506,6 +586,8 @@ namespace backend.Migrations
                         {
                             Id = 48,
                             BatteryTypeId = 6,
+                            MaxValue = 28m,
+                            MinValue = 18m,
                             ParamKey = "coolingTime",
                             Value = "18 - 28"
                         },
@@ -520,6 +602,8 @@ namespace backend.Migrations
                         {
                             Id = 50,
                             BatteryTypeId = 2,
+                            MaxValue = 65m,
+                            MinValue = 45m,
                             ParamKey = "leadPumpSpeed",
                             Value = "45 - 65"
                         },
@@ -527,6 +611,8 @@ namespace backend.Migrations
                         {
                             Id = 51,
                             BatteryTypeId = 3,
+                            MaxValue = 55m,
+                            MinValue = 35m,
                             ParamKey = "leadPumpSpeed",
                             Value = "35 - 55"
                         },
@@ -534,6 +620,8 @@ namespace backend.Migrations
                         {
                             Id = 52,
                             BatteryTypeId = 4,
+                            MaxValue = 70m,
+                            MinValue = 50m,
                             ParamKey = "leadPumpSpeed",
                             Value = "50 - 70"
                         },
@@ -541,6 +629,8 @@ namespace backend.Migrations
                         {
                             Id = 53,
                             BatteryTypeId = 5,
+                            MaxValue = 75m,
+                            MinValue = 55m,
                             ParamKey = "leadPumpSpeed",
                             Value = "55 - 75"
                         },
@@ -548,6 +638,8 @@ namespace backend.Migrations
                         {
                             Id = 54,
                             BatteryTypeId = 6,
+                            MaxValue = 55m,
+                            MinValue = 35m,
                             ParamKey = "leadPumpSpeed",
                             Value = "35 - 55"
                         },
@@ -555,6 +647,8 @@ namespace backend.Migrations
                         {
                             Id = 55,
                             BatteryTypeId = 1,
+                            MaxValue = 400m,
+                            MinValue = 300m,
                             ParamKey = "tempAirDryer",
                             Value = "300 - 400"
                         },
@@ -562,6 +656,8 @@ namespace backend.Migrations
                         {
                             Id = 56,
                             BatteryTypeId = 2,
+                            MaxValue = 410m,
+                            MinValue = 310m,
                             ParamKey = "tempAirDryer",
                             Value = "310 - 410"
                         },
@@ -569,6 +665,8 @@ namespace backend.Migrations
                         {
                             Id = 57,
                             BatteryTypeId = 3,
+                            MaxValue = 390m,
+                            MinValue = 290m,
                             ParamKey = "tempAirDryer",
                             Value = "290 - 390"
                         },
@@ -576,6 +674,8 @@ namespace backend.Migrations
                         {
                             Id = 58,
                             BatteryTypeId = 4,
+                            MaxValue = 420m,
+                            MinValue = 320m,
                             ParamKey = "tempAirDryer",
                             Value = "320 - 420"
                         },
@@ -583,6 +683,8 @@ namespace backend.Migrations
                         {
                             Id = 59,
                             BatteryTypeId = 5,
+                            MaxValue = 430m,
+                            MinValue = 330m,
                             ParamKey = "tempAirDryer",
                             Value = "330 - 430"
                         },
@@ -590,6 +692,8 @@ namespace backend.Migrations
                         {
                             Id = 60,
                             BatteryTypeId = 6,
+                            MaxValue = 390m,
+                            MinValue = 290m,
                             ParamKey = "tempAirDryer",
                             Value = "290 - 390"
                         },
@@ -597,6 +701,8 @@ namespace backend.Migrations
                         {
                             Id = 61,
                             BatteryTypeId = 1,
+                            MaxValue = 490m,
+                            MinValue = 470m,
                             ParamKey = "tempPot",
                             Value = "470 - 490"
                         },
@@ -604,6 +710,8 @@ namespace backend.Migrations
                         {
                             Id = 62,
                             BatteryTypeId = 2,
+                            MaxValue = 495m,
+                            MinValue = 475m,
                             ParamKey = "tempPot",
                             Value = "475 - 495"
                         },
@@ -611,6 +719,8 @@ namespace backend.Migrations
                         {
                             Id = 63,
                             BatteryTypeId = 3,
+                            MaxValue = 485m,
+                            MinValue = 465m,
                             ParamKey = "tempPot",
                             Value = "465 - 485"
                         },
@@ -618,6 +728,8 @@ namespace backend.Migrations
                         {
                             Id = 64,
                             BatteryTypeId = 4,
+                            MaxValue = 500m,
+                            MinValue = 480m,
                             ParamKey = "tempPot",
                             Value = "480 - 500"
                         },
@@ -625,6 +737,8 @@ namespace backend.Migrations
                         {
                             Id = 65,
                             BatteryTypeId = 5,
+                            MaxValue = 505m,
+                            MinValue = 485m,
                             ParamKey = "tempPot",
                             Value = "485 - 505"
                         },
@@ -632,6 +746,8 @@ namespace backend.Migrations
                         {
                             Id = 66,
                             BatteryTypeId = 6,
+                            MaxValue = 485m,
+                            MinValue = 465m,
                             ParamKey = "tempPot",
                             Value = "465 - 485"
                         },
@@ -639,6 +755,8 @@ namespace backend.Migrations
                         {
                             Id = 67,
                             BatteryTypeId = 1,
+                            MaxValue = 430m,
+                            MinValue = 410m,
                             ParamKey = "tempPipe",
                             Value = "410 - 430"
                         },
@@ -646,6 +764,8 @@ namespace backend.Migrations
                         {
                             Id = 68,
                             BatteryTypeId = 2,
+                            MaxValue = 435m,
+                            MinValue = 415m,
                             ParamKey = "tempPipe",
                             Value = "415 - 435"
                         },
@@ -653,6 +773,8 @@ namespace backend.Migrations
                         {
                             Id = 69,
                             BatteryTypeId = 3,
+                            MaxValue = 425m,
+                            MinValue = 405m,
                             ParamKey = "tempPipe",
                             Value = "405 - 425"
                         },
@@ -660,6 +782,8 @@ namespace backend.Migrations
                         {
                             Id = 70,
                             BatteryTypeId = 4,
+                            MaxValue = 440m,
+                            MinValue = 420m,
                             ParamKey = "tempPipe",
                             Value = "420 - 440"
                         },
@@ -667,6 +791,8 @@ namespace backend.Migrations
                         {
                             Id = 71,
                             BatteryTypeId = 5,
+                            MaxValue = 445m,
+                            MinValue = 425m,
                             ParamKey = "tempPipe",
                             Value = "425 - 445"
                         },
@@ -674,6 +800,8 @@ namespace backend.Migrations
                         {
                             Id = 72,
                             BatteryTypeId = 6,
+                            MaxValue = 425m,
+                            MinValue = 405m,
                             ParamKey = "tempPipe",
                             Value = "405 - 425"
                         },
@@ -681,6 +809,8 @@ namespace backend.Migrations
                         {
                             Id = 73,
                             BatteryTypeId = 1,
+                            MaxValue = 410m,
+                            MinValue = 390m,
                             ParamKey = "tempCrossBlock",
                             Value = "390 - 410"
                         },
@@ -688,6 +818,8 @@ namespace backend.Migrations
                         {
                             Id = 74,
                             BatteryTypeId = 2,
+                            MaxValue = 415m,
+                            MinValue = 395m,
                             ParamKey = "tempCrossBlock",
                             Value = "395 - 415"
                         },
@@ -695,6 +827,8 @@ namespace backend.Migrations
                         {
                             Id = 75,
                             BatteryTypeId = 3,
+                            MaxValue = 405m,
+                            MinValue = 385m,
                             ParamKey = "tempCrossBlock",
                             Value = "385 - 405"
                         },
@@ -702,6 +836,8 @@ namespace backend.Migrations
                         {
                             Id = 76,
                             BatteryTypeId = 4,
+                            MaxValue = 420m,
+                            MinValue = 400m,
                             ParamKey = "tempCrossBlock",
                             Value = "400 - 420"
                         },
@@ -709,6 +845,8 @@ namespace backend.Migrations
                         {
                             Id = 77,
                             BatteryTypeId = 5,
+                            MaxValue = 425m,
+                            MinValue = 405m,
                             ParamKey = "tempCrossBlock",
                             Value = "405 - 425"
                         },
@@ -716,6 +854,8 @@ namespace backend.Migrations
                         {
                             Id = 78,
                             BatteryTypeId = 6,
+                            MaxValue = 405m,
+                            MinValue = 385m,
                             ParamKey = "tempCrossBlock",
                             Value = "385 - 405"
                         },
@@ -723,6 +863,8 @@ namespace backend.Migrations
                         {
                             Id = 79,
                             BatteryTypeId = 1,
+                            MaxValue = 390m,
+                            MinValue = 370m,
                             ParamKey = "tempElbow",
                             Value = "370 - 390"
                         },
@@ -730,6 +872,8 @@ namespace backend.Migrations
                         {
                             Id = 80,
                             BatteryTypeId = 2,
+                            MaxValue = 395m,
+                            MinValue = 375m,
                             ParamKey = "tempElbow",
                             Value = "375 - 395"
                         },
@@ -737,6 +881,8 @@ namespace backend.Migrations
                         {
                             Id = 81,
                             BatteryTypeId = 3,
+                            MaxValue = 385m,
+                            MinValue = 365m,
                             ParamKey = "tempElbow",
                             Value = "365 - 385"
                         },
@@ -744,6 +890,8 @@ namespace backend.Migrations
                         {
                             Id = 82,
                             BatteryTypeId = 4,
+                            MaxValue = 400m,
+                            MinValue = 380m,
                             ParamKey = "tempElbow",
                             Value = "380 - 400"
                         },
@@ -751,6 +899,8 @@ namespace backend.Migrations
                         {
                             Id = 83,
                             BatteryTypeId = 5,
+                            MaxValue = 405m,
+                            MinValue = 385m,
                             ParamKey = "tempElbow",
                             Value = "385 - 405"
                         },
@@ -758,6 +908,8 @@ namespace backend.Migrations
                         {
                             Id = 84,
                             BatteryTypeId = 6,
+                            MaxValue = 385m,
+                            MinValue = 365m,
                             ParamKey = "tempElbow",
                             Value = "365 - 385"
                         },
@@ -765,6 +917,8 @@ namespace backend.Migrations
                         {
                             Id = 85,
                             BatteryTypeId = 1,
+                            MaxValue = 190m,
+                            MinValue = 160m,
                             ParamKey = "tempMold",
                             Value = "160 - 190"
                         },
@@ -772,6 +926,8 @@ namespace backend.Migrations
                         {
                             Id = 86,
                             BatteryTypeId = 2,
+                            MaxValue = 195m,
+                            MinValue = 165m,
                             ParamKey = "tempMold",
                             Value = "165 - 195"
                         },
@@ -779,6 +935,8 @@ namespace backend.Migrations
                         {
                             Id = 87,
                             BatteryTypeId = 3,
+                            MaxValue = 185m,
+                            MinValue = 155m,
                             ParamKey = "tempMold",
                             Value = "155 - 185"
                         },
@@ -786,6 +944,8 @@ namespace backend.Migrations
                         {
                             Id = 88,
                             BatteryTypeId = 4,
+                            MaxValue = 200m,
+                            MinValue = 170m,
                             ParamKey = "tempMold",
                             Value = "170 - 200"
                         },
@@ -793,6 +953,8 @@ namespace backend.Migrations
                         {
                             Id = 89,
                             BatteryTypeId = 5,
+                            MaxValue = 205m,
+                            MinValue = 175m,
                             ParamKey = "tempMold",
                             Value = "175 - 205"
                         },
@@ -800,6 +962,8 @@ namespace backend.Migrations
                         {
                             Id = 90,
                             BatteryTypeId = 6,
+                            MaxValue = 185m,
+                            MinValue = 155m,
                             ParamKey = "tempMold",
                             Value = "155 - 185"
                         },
@@ -807,6 +971,8 @@ namespace backend.Migrations
                         {
                             Id = 91,
                             BatteryTypeId = 1,
+                            MaxValue = 10m,
+                            MinValue = 6m,
                             ParamKey = "coolingFlowRate",
                             Value = "6 - 10"
                         },
@@ -814,6 +980,8 @@ namespace backend.Migrations
                         {
                             Id = 92,
                             BatteryTypeId = 2,
+                            MaxValue = 11m,
+                            MinValue = 7m,
                             ParamKey = "coolingFlowRate",
                             Value = "7 - 11"
                         },
@@ -821,6 +989,8 @@ namespace backend.Migrations
                         {
                             Id = 93,
                             BatteryTypeId = 3,
+                            MaxValue = 9m,
+                            MinValue = 5m,
                             ParamKey = "coolingFlowRate",
                             Value = "5 - 9"
                         },
@@ -828,6 +998,8 @@ namespace backend.Migrations
                         {
                             Id = 94,
                             BatteryTypeId = 4,
+                            MaxValue = 12m,
+                            MinValue = 8m,
                             ParamKey = "coolingFlowRate",
                             Value = "8 - 12"
                         },
@@ -835,6 +1007,8 @@ namespace backend.Migrations
                         {
                             Id = 95,
                             BatteryTypeId = 5,
+                            MaxValue = 13m,
+                            MinValue = 9m,
                             ParamKey = "coolingFlowRate",
                             Value = "9 - 13"
                         },
@@ -842,6 +1016,8 @@ namespace backend.Migrations
                         {
                             Id = 96,
                             BatteryTypeId = 6,
+                            MaxValue = 9m,
+                            MinValue = 5m,
                             ParamKey = "coolingFlowRate",
                             Value = "5 - 9"
                         });
@@ -913,10 +1089,22 @@ namespace backend.Migrations
                         .HasColumnType("varchar(100)")
                         .HasColumnName("conditional_label");
 
+                    b.Property<decimal?>("FixedMax")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("fixed_max");
+
+                    b.Property<decimal?>("FixedMin")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("fixed_min");
+
                     b.Property<string>("FixedStandard")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .HasColumnName("fixed_standard");
+
+                    b.Property<int>("FormId")
+                        .HasColumnType("int")
+                        .HasColumnName("form_id");
 
                     b.Property<string>("Frequency")
                         .HasMaxLength(100)
@@ -962,7 +1150,7 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ItemKey")
+                    b.HasIndex("FormId", "ItemKey")
                         .IsUnique();
 
                     b.ToTable("check_item");
@@ -971,6 +1159,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 1,
+                            FormId = 1,
                             Frequency = "1 batt / shift / ganti type",
                             ItemKey = "kekuatanCastingStrap",
                             Label = "Kekuatan Casting Strap",
@@ -981,6 +1170,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 2,
+                            FormId = 1,
                             Frequency = "1 batt / shift / ganti type",
                             ItemKey = "meniscus",
                             Label = "Meniscus",
@@ -991,6 +1181,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 3,
+                            FormId = 1,
                             Frequency = "1 Batt / shift / ganti type",
                             ItemKey = "hasilCastingStrap",
                             Label = "Hasil Casting Strap",
@@ -1001,7 +1192,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 4,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "levelFlux",
                             Label = "Level Flux",
                             SortOrder = 4,
@@ -1012,6 +1203,7 @@ namespace backend.Migrations
                         {
                             Id = 5,
                             ConditionalLabel = "Khusus Line 8",
+                            FormId = 1,
                             Frequency = "2 x / Shift / ganti type",
                             ItemKey = "pourWait",
                             Label = "Pour Wait (Khusus Line 8)",
@@ -1022,7 +1214,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 6,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "pourTime",
                             Label = "Pour Time",
                             NumericStdKey = "pourTime",
@@ -1032,7 +1224,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 7,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "dipTime2",
                             Label = "Dip Time 2",
                             NumericStdKey = "dipTime2",
@@ -1042,7 +1234,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 8,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "dumpTime",
                             Label = "Dump Time (Drain back time)",
                             NumericStdKey = "dumpTime",
@@ -1052,6 +1244,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 9,
+                            FormId = 1,
                             Frequency = "2 x / Shift / ganti type",
                             ItemKey = "lugDryTime",
                             Keterangan = "untuk 34B19LS OE TYT",
@@ -1063,7 +1256,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 10,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "largeVibratorTime",
                             Label = "Large Vibrator Time",
                             NumericStdKey = "largeVibratorTime",
@@ -1073,7 +1266,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 11,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "smallVibratorTime",
                             Label = "Small Vibrator Time",
                             NumericStdKey = "smallVibratorTime",
@@ -1083,7 +1276,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 12,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "coolingTime",
                             Label = "Cooling Time",
                             NumericStdKey = "coolingTime",
@@ -1093,7 +1286,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 13,
-                            Frequency = "",
+                            FormId = 1,
                             ItemKey = "leadPumpSpeed",
                             Label = "Lead Pump Speed",
                             NumericStdKey = "leadPumpSpeed",
@@ -1103,6 +1296,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 14,
+                            FormId = 1,
                             Frequency = "1 x / shift",
                             ItemKey = "checkAlignment",
                             Label = "Check Alignment",
@@ -1113,6 +1307,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 15,
+                            FormId = 1,
                             Frequency = "1 x / shift",
                             ItemKey = "checkDatumTable",
                             Keterangan = "Tidak ada ceceran pasta",
@@ -1124,6 +1319,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 16,
+                            FormId = 1,
                             Frequency = "1 x / shift",
                             ItemKey = "cleaningNozzle",
                             Keterangan = "Spray dengan udara",
@@ -1135,7 +1331,9 @@ namespace backend.Migrations
                         new
                         {
                             Id = 17,
+                            FixedMin = 275m,
                             FixedStandard = "> 275° C",
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "tempAirNozzleLugDry",
                             Keterangan = "Cek dgn Thermocouple",
@@ -1146,6 +1344,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 18,
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "tempAirDryer",
                             Label = "Temp Air Dryer (hot air)",
@@ -1157,7 +1356,9 @@ namespace backend.Migrations
                         {
                             Id = 19,
                             ConditionalLabel = "Khusus Line 7",
+                            FixedMin = 300m,
                             FixedStandard = "> 300° C",
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "blowerPipeTemp",
                             Label = "Blower Pipe Temp (Khusus Line 7)",
@@ -1168,7 +1369,9 @@ namespace backend.Migrations
                         {
                             Id = 20,
                             ConditionalLabel = "Khusus Line 7",
+                            FixedMin = 200m,
                             FixedStandard = "> 200° C",
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "blowerNozzle1Temp",
                             Label = "Blower Nozzle 1 Temp (Khusus Line 7)",
@@ -1179,7 +1382,9 @@ namespace backend.Migrations
                         {
                             Id = 21,
                             ConditionalLabel = "Khusus Line 7",
+                            FixedMin = 200m,
                             FixedStandard = "> 200° C",
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "blowerNozzle2Temp",
                             Label = "Blower Nozzle 2 Temp (Khusus Line 7)",
@@ -1189,6 +1394,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 22,
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "tempPot",
                             Label = "Temperatur Pot",
@@ -1199,6 +1405,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 23,
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "tempPipe",
                             Label = "Temperatur Pipe",
@@ -1209,6 +1416,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 24,
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "tempCrossBlock",
                             Label = "Temp. Cross Block",
@@ -1219,6 +1427,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 25,
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "tempElbow",
                             Label = "Temp. Elbow (Lead Lump)",
@@ -1229,6 +1438,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 26,
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "tempMold",
                             Label = "Temperatur Mold",
@@ -1239,6 +1449,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 27,
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "coolingFlowRate",
                             Label = "Cooling Water Flow Rate",
@@ -1249,7 +1460,10 @@ namespace backend.Migrations
                         new
                         {
                             Id = 28,
+                            FixedMax = 30m,
+                            FixedMin = 26m,
                             FixedStandard = "28 ± 2 °C",
+                            FormId = 1,
                             Frequency = "2 x / shift",
                             ItemKey = "coolingWaterTemp",
                             Label = "Cooling Water Temperature",
@@ -1259,6 +1473,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 29,
+                            FormId = 1,
                             Frequency = "2 x / Shift",
                             ItemKey = "sprueBrush",
                             Label = "Sprue Brush",
@@ -1269,6 +1484,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 30,
+                            FormId = 1,
                             Frequency = "3 x / Shift",
                             ItemKey = "cleaningCavityMold",
                             Label = "Cleaning Cavity Mold COS",
@@ -1279,6 +1495,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 31,
+                            FormId = 1,
                             Frequency = "1 batt / shift / ganti type",
                             ItemKey = "fluxTime",
                             Label = "Flux Time",
@@ -1288,6 +1505,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 32,
+                            FormId = 1,
                             Frequency = "1 batt / shift / ganti type",
                             ItemKey = "overflowHydrazine",
                             Label = "Overflow Hydrazine",
@@ -1308,6 +1526,14 @@ namespace backend.Migrations
                     b.Property<int>("CheckItemId")
                         .HasColumnType("int")
                         .HasColumnName("check_item_id");
+
+                    b.Property<decimal?>("FixedMax")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("fixed_max");
+
+                    b.Property<decimal?>("FixedMin")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("fixed_min");
 
                     b.Property<string>("FixedStandard")
                         .HasMaxLength(100)
@@ -1437,6 +1663,8 @@ namespace backend.Migrations
                         {
                             Id = 13,
                             CheckItemId = 31,
+                            FixedMax = 3m,
+                            FixedMin = 1m,
                             FixedStandard = "1 - 3 detik",
                             Label = "Line 6",
                             SortOrder = 1,
@@ -1446,6 +1674,8 @@ namespace backend.Migrations
                         {
                             Id = 14,
                             CheckItemId = 31,
+                            FixedMax = 1m,
+                            FixedMin = 0.1m,
                             FixedStandard = "0.1 - 1 detik",
                             Label = "Line 2,3,4,5,7&8",
                             SortOrder = 2,
@@ -1455,6 +1685,8 @@ namespace backend.Migrations
                         {
                             Id = 15,
                             CheckItemId = 32,
+                            FixedMax = 10m,
+                            FixedMin = 10m,
                             FixedStandard = "10 detik",
                             Label = "Line 2",
                             SortOrder = 1,
@@ -1464,6 +1696,8 @@ namespace backend.Migrations
                         {
                             Id = 16,
                             CheckItemId = 32,
+                            FixedMax = 5m,
+                            FixedMin = 5m,
                             FixedStandard = "5 detik",
                             Label = "Line 7",
                             SortOrder = 2,
@@ -1471,7 +1705,7 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.CosCheckSetting", b =>
+            modelBuilder.Entity("backend.Models.FormDefinition", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1480,30 +1714,60 @@ namespace backend.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CosValidationId")
-                        .HasColumnType("int")
-                        .HasColumnName("cos_validation_id");
-
-                    b.Property<string>("SettingKey")
+                    b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("varchar(120)")
-                        .HasColumnName("setting_key");
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("code");
 
-                    b.Property<string>("Value")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("value");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("SlotCount")
+                        .HasColumnType("int")
+                        .HasColumnName("slot_count");
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("subtitle");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CosValidationId", "SettingKey")
+                    b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("cos_check_setting");
+                    b.ToTable("form_definition");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "COS_VALIDATION",
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            SlotCount = 3,
+                            Subtitle = "Form-A2 1-K.051-5-2",
+                            Title = "VALIDASI PROSES COS"
+                        });
                 });
 
-            modelBuilder.Entity("backend.Models.CosProblem", b =>
+            modelBuilder.Entity("backend.Models.FormProblemColumn", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1512,19 +1776,130 @@ namespace backend.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Action")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("action");
+                    b.Property<string>("ColumnKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("column_key");
 
-                    b.Property<int>("CosValidationId")
+                    b.Property<string>("FieldType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("field_type");
+
+                    b.Property<int>("FormId")
                         .HasColumnType("int")
-                        .HasColumnName("cos_validation_id");
+                        .HasColumnName("form_id");
 
-                    b.Property<string>("Problem")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("problem");
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("label");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Width")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FormId");
+
+                    b.ToTable("form_problem_column");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ColumnKey = "item",
+                            FieldType = "text",
+                            FormId = 1,
+                            Label = "ITEM",
+                            SortOrder = 1,
+                            Width = "120px"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            ColumnKey = "masalah",
+                            FieldType = "text",
+                            FormId = 1,
+                            Label = "MASALAH",
+                            SortOrder = 2,
+                            Width = "200px"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            ColumnKey = "tindakan",
+                            FieldType = "text",
+                            FormId = 1,
+                            Label = "TINDAKAN",
+                            SortOrder = 3,
+                            Width = "200px"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            ColumnKey = "waktu",
+                            FieldType = "text",
+                            FormId = 1,
+                            Label = "WAKTU",
+                            SortOrder = 4,
+                            Width = "80px"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            ColumnKey = "menit",
+                            FieldType = "number",
+                            FormId = 1,
+                            Label = "MENIT",
+                            SortOrder = 5,
+                            Width = "60px"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            ColumnKey = "pic",
+                            FieldType = "text",
+                            FormId = 1,
+                            Label = "PIC",
+                            SortOrder = 6,
+                            Width = "100px"
+                        });
+                });
+
+            modelBuilder.Entity("backend.Models.FormSignatureSlot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FormId")
+                        .HasColumnType("int")
+                        .HasColumnName("form_id");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("label");
+
+                    b.Property<string>("RoleKey")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("role_key");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("int")
@@ -1532,12 +1907,46 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CosValidationId");
+                    b.HasIndex("FormId");
 
-                    b.ToTable("cos_problem");
+                    b.ToTable("form_signature_slot");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            FormId = 1,
+                            Label = "Dibuat",
+                            RoleKey = "operator",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            FormId = 1,
+                            Label = "Diperiksa",
+                            RoleKey = "leader",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            FormId = 1,
+                            Label = "Diketahui",
+                            RoleKey = "kasubsie",
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            FormId = 1,
+                            Label = "Disetujui",
+                            RoleKey = "kasie",
+                            SortOrder = 4
+                        });
                 });
 
-            modelBuilder.Entity("backend.Models.CosSignature", b =>
+            modelBuilder.Entity("backend.Models.FormSubmission", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1546,55 +1955,17 @@ namespace backend.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CosValidationId")
-                        .HasColumnType("int")
-                        .HasColumnName("cos_validation_id");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("varchar(30)")
-                        .HasColumnName("role");
-
-                    b.Property<string>("SignatureData")
+                    b.Property<string>("BatterySlotsJson")
                         .HasColumnType("longtext")
-                        .HasColumnName("signature_data");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CosValidationId", "Role")
-                        .IsUnique();
-
-                    b.ToTable("cos_signature");
-                });
-
-            modelBuilder.Entity("backend.Models.CosValidation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("BatteryType1")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("battery_type_1");
-
-                    b.Property<string>("BatteryType2")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("battery_type_2");
-
-                    b.Property<string>("BatteryType3")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)")
-                        .HasColumnName("battery_type_3");
+                        .HasColumnName("battery_slots_json");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
+
+                    b.Property<int>("FormId")
+                        .HasColumnType("int")
+                        .HasColumnName("form_id");
 
                     b.Property<int?>("KasieId")
                         .HasColumnType("int")
@@ -1611,21 +1982,6 @@ namespace backend.Migrations
                     b.Property<int>("Line")
                         .HasColumnType("int")
                         .HasColumnName("line");
-
-                    b.Property<string>("Mold1")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("mold_1");
-
-                    b.Property<string>("Mold2")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("mold_2");
-
-                    b.Property<string>("Mold3")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("mold_3");
 
                     b.Property<int>("OperatorId")
                         .HasColumnType("int")
@@ -1645,6 +2001,8 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FormId");
+
                     b.HasIndex("KasieId");
 
                     b.HasIndex("KasubsieId");
@@ -1653,7 +2011,7 @@ namespace backend.Migrations
 
                     b.HasIndex("OperatorId");
 
-                    b.ToTable("cos_validation");
+                    b.ToTable("form_submission");
                 });
 
             modelBuilder.Entity("backend.Models.Kasie", b =>
@@ -1862,6 +2220,97 @@ namespace backend.Migrations
                         });
                 });
 
+            modelBuilder.Entity("backend.Models.SubmissionCheckValue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("SettingKey")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)")
+                        .HasColumnName("setting_key");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int")
+                        .HasColumnName("submission_id");
+
+                    b.Property<string>("Value")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId", "SettingKey")
+                        .IsUnique();
+
+                    b.ToTable("submission_check_value");
+                });
+
+            modelBuilder.Entity("backend.Models.SubmissionProblem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int")
+                        .HasColumnName("submission_id");
+
+                    b.Property<string>("ValuesJson")
+                        .HasColumnType("longtext")
+                        .HasColumnName("values_json");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("submission_problem");
+                });
+
+            modelBuilder.Entity("backend.Models.SubmissionSignature", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("RoleKey")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)")
+                        .HasColumnName("role_key");
+
+                    b.Property<string>("SignatureData")
+                        .HasColumnType("longtext")
+                        .HasColumnName("signature_data");
+
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("int")
+                        .HasColumnName("submission_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId", "RoleKey")
+                        .IsUnique();
+
+                    b.ToTable("submission_signature");
+                });
+
             modelBuilder.Entity("backend.Models.BatteryMold", b =>
                 {
                     b.HasOne("backend.Models.BatteryType", "BatteryType")
@@ -1884,6 +2333,17 @@ namespace backend.Migrations
                     b.Navigation("BatteryType");
                 });
 
+            modelBuilder.Entity("backend.Models.CheckItem", b =>
+                {
+                    b.HasOne("backend.Models.FormDefinition", "Form")
+                        .WithMany("CheckItems")
+                        .HasForeignKey("FormId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Form");
+                });
+
             modelBuilder.Entity("backend.Models.CheckSubRow", b =>
                 {
                     b.HasOne("backend.Models.CheckItem", "CheckItem")
@@ -1895,41 +2355,36 @@ namespace backend.Migrations
                     b.Navigation("CheckItem");
                 });
 
-            modelBuilder.Entity("backend.Models.CosCheckSetting", b =>
+            modelBuilder.Entity("backend.Models.FormProblemColumn", b =>
                 {
-                    b.HasOne("backend.Models.CosValidation", "CosValidation")
-                        .WithMany("CheckSettings")
-                        .HasForeignKey("CosValidationId")
+                    b.HasOne("backend.Models.FormDefinition", "Form")
+                        .WithMany("ProblemColumns")
+                        .HasForeignKey("FormId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CosValidation");
+                    b.Navigation("Form");
                 });
 
-            modelBuilder.Entity("backend.Models.CosProblem", b =>
+            modelBuilder.Entity("backend.Models.FormSignatureSlot", b =>
                 {
-                    b.HasOne("backend.Models.CosValidation", "CosValidation")
-                        .WithMany("Problems")
-                        .HasForeignKey("CosValidationId")
+                    b.HasOne("backend.Models.FormDefinition", "Form")
+                        .WithMany("SignatureSlots")
+                        .HasForeignKey("FormId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CosValidation");
+                    b.Navigation("Form");
                 });
 
-            modelBuilder.Entity("backend.Models.CosSignature", b =>
+            modelBuilder.Entity("backend.Models.FormSubmission", b =>
                 {
-                    b.HasOne("backend.Models.CosValidation", "CosValidation")
-                        .WithMany("Signatures")
-                        .HasForeignKey("CosValidationId")
+                    b.HasOne("backend.Models.FormDefinition", "Form")
+                        .WithMany("Submissions")
+                        .HasForeignKey("FormId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CosValidation");
-                });
-
-            modelBuilder.Entity("backend.Models.CosValidation", b =>
-                {
                     b.HasOne("backend.Models.Kasie", "Kasie")
                         .WithMany()
                         .HasForeignKey("KasieId");
@@ -1947,6 +2402,8 @@ namespace backend.Migrations
                         .HasForeignKey("OperatorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Form");
 
                     b.Navigation("Kasie");
 
@@ -1990,6 +2447,39 @@ namespace backend.Migrations
                     b.Navigation("Leader");
                 });
 
+            modelBuilder.Entity("backend.Models.SubmissionCheckValue", b =>
+                {
+                    b.HasOne("backend.Models.FormSubmission", "Submission")
+                        .WithMany("CheckValues")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Submission");
+                });
+
+            modelBuilder.Entity("backend.Models.SubmissionProblem", b =>
+                {
+                    b.HasOne("backend.Models.FormSubmission", "Submission")
+                        .WithMany("Problems")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Submission");
+                });
+
+            modelBuilder.Entity("backend.Models.SubmissionSignature", b =>
+                {
+                    b.HasOne("backend.Models.FormSubmission", "Submission")
+                        .WithMany("Signatures")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Submission");
+                });
+
             modelBuilder.Entity("backend.Models.BatteryType", b =>
                 {
                     b.Navigation("Molds");
@@ -2002,9 +2492,20 @@ namespace backend.Migrations
                     b.Navigation("SubRows");
                 });
 
-            modelBuilder.Entity("backend.Models.CosValidation", b =>
+            modelBuilder.Entity("backend.Models.FormDefinition", b =>
                 {
-                    b.Navigation("CheckSettings");
+                    b.Navigation("CheckItems");
+
+                    b.Navigation("ProblemColumns");
+
+                    b.Navigation("SignatureSlots");
+
+                    b.Navigation("Submissions");
+                });
+
+            modelBuilder.Entity("backend.Models.FormSubmission", b =>
+                {
+                    b.Navigation("CheckValues");
 
                     b.Navigation("Problems");
 

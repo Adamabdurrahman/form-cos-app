@@ -1,0 +1,79 @@
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+
+  .admin-sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #1a1a2e;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+
+    .admin-sidebar-header {
+      padding: 20px 16px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .admin-sidebar-nav {
+      flex: 1;
+      padding: 12px 0;
+      overflow-y: auto;
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 14px;
+        transition: background 0.2s, color 0.2s;
+        cursor: pointer;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.08);
+          color: #fff;
+        }
+
+        &.active {
+          background: rgba(255, 255, 255, 0.15);
+          color: #fff;
+          border-left: 3px solid #4fc3f7;
+        }
+
+        .dx-icon {
+          font-size: 18px;
+        }
+      }
+    }
+
+    .admin-sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+
+      a {
+        color: rgba(255, 255, 255, 0.5);
+        text-decoration: none;
+        font-size: 12px;
+
+        &:hover {
+          color: #fff;
+        }
+      }
+    }
+  }
+
+  .admin-content {
+    flex: 1;
+    overflow-y: auto;
+    background: #f5f5f5;
+    padding: 24px;
+  }
+}

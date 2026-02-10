@@ -4,10 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace backend.Models;
 
-/// <summary>
-/// Sub-rows for check items with multiple measurements
-/// (e.g., +/- for CastingStrap, L/R for Pipe, Mold1/Mold2 for Mold Temp)
-/// </summary>
 [Table("check_sub_row")]
 public class CheckSubRow
 {
@@ -25,12 +21,15 @@ public class CheckSubRow
     [Column("label")]
     public string Label { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Optional fixed standard for this specific sub-row
-    /// </summary>
     [MaxLength(100)]
     [Column("fixed_standard")]
     public string? FixedStandard { get; set; }
+
+    [Column("fixed_min", TypeName = "decimal(10,2)")]
+    public decimal? FixedMin { get; set; }
+
+    [Column("fixed_max", TypeName = "decimal(10,2)")]
+    public decimal? FixedMax { get; set; }
 
     [Column("sort_order")]
     public int SortOrder { get; set; }
@@ -38,7 +37,6 @@ public class CheckSubRow
     [Column("check_item_id")]
     public int CheckItemId { get; set; }
 
-    // Navigation
     [JsonIgnore]
     [ForeignKey(nameof(CheckItemId))]
     public CheckItem? CheckItem { get; set; }

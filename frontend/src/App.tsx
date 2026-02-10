@@ -4,9 +4,18 @@ import './themes/generated/theme.base.css';
 import './themes/generated/theme.additional.dark.css';
 import './themes/generated/theme.additional.css';
 import './dx-styles.scss';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useScreenSizeClass } from './utils/media-query';
-import { ThemeContext, useThemeContext} from "./theme";
+import { ThemeContext, useThemeContext } from './theme';
 import { CosValidation } from './pages/cos-validation/cos-validation';
+import { AdminLayout } from './pages/admin/admin-layout';
+import { AdminDashboard } from './pages/admin/dashboard';
+import { FormList } from './pages/admin/form-list';
+import { FormEditor } from './pages/admin/form-editor';
+import { SubmissionList } from './pages/admin/submission-list';
+import { SubmissionDetail } from './pages/admin/submission-detail';
+import { PersonnelPage } from './pages/admin/personnel';
+import { BatteryTypesPage } from './pages/admin/battery-types';
 
 export default function Root() {
   const screenSizeClass = useScreenSizeClass();
@@ -14,9 +23,30 @@ export default function Root() {
 
   return (
     <ThemeContext.Provider value={themeContext}>
-      <div className={`app ${screenSizeClass}`}>
-        <CosValidation />
-      </div>
+      <BrowserRouter>
+        <Routes>
+          {/* Admin routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="forms" element={<FormList />} />
+            <Route path="forms/:id" element={<FormEditor />} />
+            <Route path="submissions" element={<SubmissionList />} />
+            <Route path="submissions/:id" element={<SubmissionDetail />} />
+            <Route path="personnel" element={<PersonnelPage />} />
+            <Route path="battery-types" element={<BatteryTypesPage />} />
+          </Route>
+          {/* Main app */}
+          <Route
+            path="/"
+            element={
+              <div className={`app ${screenSizeClass}`}>
+                <CosValidation />
+              </div>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
     </ThemeContext.Provider>
   );
 }
