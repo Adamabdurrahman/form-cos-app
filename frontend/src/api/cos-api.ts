@@ -1,5 +1,6 @@
-// const API_BASE = 'http://192.168.122.1:5000/api';
-const API_BASE = 'https://6a72-114-124-237-130.ngrok-free.app/api';
+// Jika diserve dari backend .NET yang sama, cukup pakai relative path '/api'
+// Untuk development terpisah (vite dev), ganti ke URL backend langsung
+const API_BASE = '/api';
 
 // ── Generic fetch helper ──
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {

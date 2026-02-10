@@ -111,3 +111,4 @@
 /home/ubuntu/gs/form/backend/obj/Debug/net8.0/backend.genruntimeconfig.cache
 /home/ubuntu/gs/form/backend/obj/Debug/net8.0/ref/backend.dll
 /home/ubuntu/gs/form/backend/obj/Debug/net8.0/backend.sourcelink.json
+/home/ubuntu/gs/form/backend/bin/Debug/net8.0/backend.staticwebassets.runtime.json

@@ -24,7 +24,7 @@ builder.Services.AddControllers()
         opts.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
-// ── CORS ──
+// ── CORS (hanya untuk development, saat frontend jalan terpisah) ──
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -32,8 +32,6 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 "http://localhost:5173",
-                "http://192.168.122.1:5173",
-                "http://192.168.9.101:5173",
                 "http://localhost:5174",
                 "http://localhost:5175",
                 "http://localhost:3000"
@@ -46,16 +44,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ── Middleware pipeline ──
-app.UseCors("AllowFrontend");
-
-app.MapControllers();
-
 // ── Auto-migrate on startup (dev only) ──
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<FormCosDbContext>();
     db.Database.Migrate();
 }
+
+// ── Middleware pipeline ──
+app.UseCors("AllowFrontend");
+
+// Serve static files dari wwwroot (hasil build frontend)
+app.UseDefaultFiles();     // index.html sebagai default
+app.UseStaticFiles();      // serve file dari wwwroot/
+
+// API routes
+app.MapControllers();
+
+// SPA fallback: semua route yang bukan /api/* dan bukan static file
+// diarahkan ke index.html supaya React Router bisa handle routing
+app.MapFallbackToFile("index.html");
 
 app.Run();
