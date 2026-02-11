@@ -40,7 +40,10 @@ export function SubmissionDetail() {
     <div className="submission-detail">
       <div className="detail-header">
         <h2>Submission #{data.id}</h2>
-        <Button text="Back" icon="back" stylingMode="outlined" onClick={() => navigate('/admin/submissions')} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button text="View Form" icon="doc" stylingMode="contained" type="default" onClick={() => navigate(`/admin/submissions/${data.id}/view`)} />
+          <Button text="Back" icon="back" stylingMode="outlined" onClick={() => navigate('/admin/submissions')} />
+        </div>
       </div>
 
       <div className="info-cards">

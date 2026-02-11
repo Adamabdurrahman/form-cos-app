@@ -14,6 +14,7 @@ import { FormList } from './pages/admin/form-list';
 import { FormEditor } from './pages/admin/form-editor';
 import { SubmissionList } from './pages/admin/submission-list';
 import { SubmissionDetail } from './pages/admin/submission-detail';
+import { SubmissionResponse } from './pages/admin/submission-response';
 import { PersonnelPage } from './pages/admin/personnel';
 import { BatteryTypesPage } from './pages/admin/battery-types';
 
@@ -32,6 +33,7 @@ export default function Root() {
             <Route path="forms/:id" element={<FormEditor />} />
             <Route path="submissions" element={<SubmissionList />} />
             <Route path="submissions/:id" element={<SubmissionDetail />} />
+            <Route path="submissions/:id/view" element={<SubmissionResponse />} />
             <Route path="personnel" element={<PersonnelPage />} />
             <Route path="battery-types" element={<BatteryTypesPage />} />
           </Route>

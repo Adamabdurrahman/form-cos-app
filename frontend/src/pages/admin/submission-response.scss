@@ -1,0 +1,574 @@
+/* ============================== SUBMISSION RESPONSE PAGE ============================== */
+
+.submission-response-page {
+  overflow-x: auto;
+  padding: 0;
+
+  /* ===== TOOLBAR ===== */
+  .response-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  /* ===== FORM (reuse cos-form styles) ===== */
+  .cos-form {
+    background: #fff;
+    max-width: 1200px;
+    margin: 0 auto 24px;
+    padding: 24px;
+    font-size: 11px;
+    color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+
+    /* ============ VIEW MODE SPECIFIC ============ */
+    &.view-mode {
+      .readonly-text {
+        font-size: 12px;
+        font-weight: 500;
+        color: #222;
+      }
+
+      .readonly-value {
+        font-size: 10.5px;
+        color: #222;
+      }
+
+      .out-of-range-text {
+        color: #dc3545 !important;
+        font-weight: bold !important;
+      }
+
+      .readonly-header-value {
+        font-size: 11px;
+        font-weight: 600;
+        color: #222;
+        display: block;
+        padding: 4px 0;
+      }
+    }
+
+    /* ============ EDIT MODE INDICATOR ============ */
+    &.edit-mode {
+      border: 2px solid #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ============ HEADER ============ */
+    .form-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid #000;
+      padding-bottom: 12px;
+
+      .header-left {
+        flex: 0 0 auto;
+        .gs-logo {
+          width: 80px;
+          height: auto;
+        }
+      }
+
+      .header-center {
+        flex: 1 1 auto;
+        text-align: center;
+        padding-top: 8px;
+
+        .form-title {
+          font-size: 16px;
+          font-weight: bold;
+          margin: 0 0 4px 0;
+          letter-spacing: 1px;
+        }
+        .form-id {
+          font-size: 10px;
+          color: #666;
+        }
+      }
+
+      .header-right {
+        flex: 0 0 auto;
+
+        .approval-section {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+
+          .approval-box {
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 6px 8px;
+            background: #fafafa;
+            min-width: 90px;
+
+            .signature-view-label {
+              font-size: 9px;
+              font-weight: bold;
+              color: #555;
+              text-transform: uppercase;
+              margin-bottom: 4px;
+            }
+
+            .signature-view-img {
+              width: 80px;
+              height: 50px;
+              object-fit: contain;
+              border: 1px solid #eee;
+              background: #fff;
+              border-radius: 2px;
+            }
+
+            .signature-view-empty {
+              width: 80px;
+              height: 50px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: #ccc;
+              font-size: 16px;
+              border: 1px dashed #ddd;
+              border-radius: 2px;
+              margin: 0 auto;
+            }
+
+            .signature-view-name {
+              font-size: 9px;
+              color: #333;
+              margin-top: 4px;
+              font-weight: 500;
+            }
+          }
+        }
+      }
+    }
+
+    /* ============ INFO FIELDS ============ */
+    .form-info {
+      margin-bottom: 16px;
+
+      .info-table {
+        border-collapse: collapse;
+        border: none;
+
+        td {
+          border: none;
+          padding: 4px 8px 4px 0;
+          vertical-align: middle;
+        }
+
+        .info-label {
+          font-weight: bold;
+          white-space: nowrap;
+          width: 100px;
+          font-size: 12px;
+        }
+        .info-sep {
+          width: 10px;
+          text-align: center;
+          font-weight: bold;
+        }
+        .info-value {
+          .line-shift-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            .separator {
+              font-weight: bold;
+              font-size: 14px;
+            }
+          }
+        }
+      }
+    }
+
+    /* ============ SECTION TITLES ============ */
+    .section-title {
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ============ SECTION A: VALIDATION TABLE ============ */
+    .section-a {
+      margin-bottom: 24px;
+
+      .table-scroll-wrapper {
+        overflow-x: auto;
+        border: 1px solid #000;
+      }
+    }
+
+    .cos-table {
+      width: 100%;
+      min-width: 950px;
+      border-collapse: collapse;
+      font-size: 10.5px;
+
+      th,
+      td {
+        border: 1px solid #000;
+        padding: 3px 4px;
+        vertical-align: middle;
+        text-align: center;
+      }
+
+      thead {
+        th {
+          background: #e8ecf0;
+          font-weight: bold;
+          font-size: 10px;
+        }
+
+        .header-item {
+          text-align: center;
+          font-size: 11px;
+        }
+
+        .header-type {
+          min-width: 140px;
+          .type-header-label {
+            font-size: 9px;
+            color: #555;
+            margin-bottom: 2px;
+          }
+        }
+
+        .header-std,
+        .header-set {
+          font-size: 9.5px;
+          background: #dce3ea;
+        }
+
+        .header-freq,
+        .header-ket {
+          font-size: 9.5px;
+        }
+
+        .header-mold-label {
+          text-align: left;
+          padding-left: 8px;
+          font-size: 10px;
+        }
+
+        .header-mold {
+          background: #f0f3f6;
+        }
+      }
+
+      tbody {
+        .check-row {
+          &:hover {
+            background: #f8f9fb;
+          }
+        }
+
+        .item-name-cell {
+          text-align: left;
+          padding-left: 6px;
+          font-weight: 500;
+          font-size: 10.5px;
+          white-space: nowrap;
+          background: #fafbfc;
+        }
+
+        .sub-label-cell {
+          font-weight: bold;
+          font-size: 10px;
+          color: #444;
+          background: #f5f6f8;
+          min-width: 30px;
+        }
+
+        .standard-cell {
+          font-size: 9.5px;
+          color: #333;
+          background: #f8fafe;
+          min-width: 70px;
+        }
+
+        .setting-cell {
+          min-width: 70px;
+          padding: 1px 2px;
+
+          &.visual-setting {
+            padding: 0;
+          }
+
+          .empty-cell {
+            color: #ccc;
+            font-size: 10px;
+          }
+
+          .visual-check-pair {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+            height: 100%;
+            min-height: 28px;
+
+            .visual-btn {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              flex: 1;
+              font-size: 16px;
+              font-weight: bold;
+              user-select: none;
+              transition: background 0.12s ease, color 0.12s ease;
+              background: #f0f0f0;
+              color: #bbb;
+              border: none;
+
+              &:hover {
+                filter: brightness(0.95);
+              }
+            }
+
+            .ng-btn {
+              border-right: 1px solid #ddd;
+
+              &.active {
+                color: #fff;
+                background: #dc3545;
+              }
+            }
+
+            .ok-btn {
+              &.active {
+                color: #fff;
+                background: #28a745;
+              }
+            }
+          }
+
+          /* Read-only visual result (view/print mode) */
+          .visual-readonly {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 28px;
+            font-size: 16px;
+            font-weight: bold;
+
+            &.ok {
+              color: #28a745;
+            }
+
+            &.ng {
+              color: #fff;
+              background: #dc3545;
+              font-size: 11px;
+              letter-spacing: 0.5px;
+            }
+          }
+
+          /* Compact DX inputs */
+          .dx-texteditor {
+            margin: 0;
+
+            .dx-texteditor-input {
+              min-height: 22px !important;
+              height: 22px !important;
+              padding: 0 4px !important;
+              font-size: 10.5px !important;
+              text-align: center;
+            }
+
+            .dx-texteditor-input-container {
+              &::after {
+                border-bottom-width: 1px;
+              }
+            }
+
+            &.dx-selectbox {
+              .dx-texteditor-input {
+                padding-right: 20px !important;
+              }
+            }
+          }
+
+          .dx-dropdowneditor-button {
+            width: 18px;
+            min-width: 18px;
+          }
+
+          .dx-clear-value-btn {
+            width: 16px;
+            min-width: 16px;
+          }
+        }
+
+        .frequency-cell {
+          font-size: 9px;
+          color: #555;
+          white-space: nowrap;
+          background: #fafbfc;
+        }
+
+        .ket-cell {
+          font-size: 9px;
+          color: #555;
+          background: #fafbfc;
+        }
+      }
+    }
+
+    /* ============ SECTION B: PROBLEMS TABLE ============ */
+    .section-b {
+      margin-bottom: 24px;
+
+      .problems-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+
+        th,
+        td {
+          border: 1px solid #000;
+          padding: 3px 4px;
+          vertical-align: middle;
+        }
+
+        thead th {
+          background: #e8ecf0;
+          font-weight: bold;
+          font-size: 10.5px;
+          text-align: center;
+        }
+
+        tbody {
+          .problem-no {
+            text-align: center;
+            font-weight: bold;
+          }
+
+          .problem-action {
+            text-align: center;
+            border: none;
+            padding: 0;
+          }
+
+          td {
+            .dx-texteditor {
+              margin: 0;
+              .dx-texteditor-input {
+                min-height: 24px !important;
+                height: 24px !important;
+                padding: 0 4px !important;
+                font-size: 11px !important;
+              }
+            }
+
+            .readonly-value {
+              font-size: 11px;
+              padding: 2px 4px;
+              display: block;
+            }
+          }
+        }
+      }
+
+      .add-problem-row {
+        margin-top: 8px;
+        text-align: left;
+      }
+    }
+
+    /* ============ OUT-OF-RANGE VALIDATION ============ */
+    .out-of-range {
+      .dx-texteditor-input {
+        color: #dc3545 !important;
+        font-weight: bold !important;
+      }
+      &.dx-texteditor::after,
+      .dx-texteditor-input-container::after {
+        border-bottom-color: #dc3545 !important;
+      }
+    }
+
+    /* ============ FOOTER INFO ============ */
+    .form-footer-info {
+      text-align: center;
+      padding-top: 16px;
+      border-top: 1px solid #ddd;
+      margin-top: 16px;
+
+      .submission-id-label {
+        font-size: 11px;
+        color: #888;
+      }
+    }
+  }
+}
+
+/* ============ PRINT STYLES ============ */
+@media print {
+  /* Hide everything except the form */
+  .admin-layout .admin-sidebar {
+    display: none !important;
+  }
+  .admin-layout .admin-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  .admin-layout {
+    display: block !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .submission-response-page {
+    padding: 0;
+
+    .cos-form {
+      box-shadow: none;
+      border: none;
+      padding: 0;
+      max-width: 100%;
+      margin: 0;
+
+      &.edit-mode {
+        border: none;
+        box-shadow: none;
+      }
+
+      .form-footer-info {
+        display: none;
+      }
+      .add-problem-row {
+        display: none;
+      }
+      .problem-action {
+        display: none;
+      }
+
+      .visual-check-pair .visual-btn {
+        cursor: default;
+      }
+    }
+  }
+}

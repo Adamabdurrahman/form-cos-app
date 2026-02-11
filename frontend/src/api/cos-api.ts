@@ -231,6 +231,8 @@ export const getFormSubmissionById = (id: number) =>
   apiFetch<FormSubmissionDetailDto>(`/formsubmission/${id}`);
 export const submitFormSubmission = (data: FormSubmissionPayload) =>
   apiFetch<{ id: number }>('/formsubmission', { method: 'POST', body: JSON.stringify(data) });
+export const updateFormSubmission = (id: number, data: FormSubmissionPayload) =>
+  apiFetch<{ id: number }>(`/formsubmission/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteFormSubmission = (id: number) =>
   apiFetch<void>(`/formsubmission/${id}`, { method: 'DELETE' });
 
@@ -293,3 +295,20 @@ export const adminGetPersonnel = () =>
 // ── Admin: Molds (read-only from master data) ──
 export const adminGetMolds = () =>
   apiFetch<{ moldCode: string; moldDescription: string; moldStatus: string; idSection: number | null }[]>('/admin/molds');
+
+// ── Employee Signatures (persistent per-employee) ──
+export interface EmployeeSignatureDto {
+  empId: string;
+  signatureData: string | null;
+}
+export const getEmployeeSignature = (empId: string) =>
+  apiFetch<EmployeeSignatureDto>(`/employeesignature/${encodeURIComponent(empId)}`);
+export const getEmployeeSignaturesBatch = (empIds: string[]) => {
+  const params = empIds.map(id => `empIds=${encodeURIComponent(id)}`).join('&');
+  return apiFetch<EmployeeSignatureDto[]>(`/employeesignature/batch?${params}`);
+};
+export const saveEmployeeSignature = (empId: string, signatureData: string | null) =>
+  apiFetch<{ empId: string; saved: boolean }>(`/employeesignature/${encodeURIComponent(empId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ signatureData }),
+  });

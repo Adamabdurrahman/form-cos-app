@@ -257,6 +257,15 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
         return operatorList.find(o => o.empId === operatorEmpId)?.name ?? '';
     }, [operatorEmpId, operatorList]);
 
+    /** Map signature roleKey → empId for DB-based signature persistence */
+    const getEmpIdForRole = useCallback((roleKey: string): string | null => {
+        if (roleKey === 'operator') return operatorEmpId;
+        if (roleKey === 'leader') return hierarchyIds.leaderEmpId ?? null;
+        if (roleKey === 'kasubsie') return hierarchyIds.kasubsieEmpId ?? null;
+        if (roleKey === 'kasie') return hierarchyIds.kasieEmpId ?? null;
+        return null;
+    }, [operatorEmpId, hierarchyIds]);
+
     // ===== RENDER HELPERS =====
 
     function renderSettingInput(item: CheckItemDto, subRow: SubRowDto | null, slotIdx: number) {
@@ -421,8 +430,7 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                         <div className="approval-box" key={slot.roleKey}>
                                             <SignaturePad
                                                 label={slot.label}
-                                                name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey}
-                                                onChange={(d) => updateSignature(slot.roleKey, d)}
+                                                name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey}                                                empId={getEmpIdForRole(slot.roleKey)}                                                onChange={(d) => updateSignature(slot.roleKey, d)}
                                             />
                                         </div>
                                     ))}

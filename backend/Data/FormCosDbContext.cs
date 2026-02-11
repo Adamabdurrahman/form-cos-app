@@ -40,6 +40,7 @@ public class FormCosDbContext : DbContext
     public DbSet<CosCheckValue> CosCheckValues => Set<CosCheckValue>();
     public DbSet<CosProblem> CosProblems => Set<CosProblem>();
     public DbSet<CosSignatureEntry> CosSignatureEntries => Set<CosSignatureEntry>();
+    public DbSet<CosEmployeeSignature> CosEmployeeSignatures => Set<CosEmployeeSignature>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +71,9 @@ public class FormCosDbContext : DbContext
 
         modelBuilder.Entity<CosSignatureEntry>()
             .HasIndex(ss => new { ss.SubmissionId, ss.RoleKey }).IsUnique();
+
+        modelBuilder.Entity<CosEmployeeSignature>()
+            .HasIndex(es => es.EmpId).IsUnique();
 
         // ═══ Cascades ═══
         modelBuilder.Entity<CosSubmission>()

@@ -92,6 +92,22 @@ body {
     }
   }
 
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+  }
+
+  .dx-texteditor.dx-state-focused {
+    box-shadow: 0 0 0 1px #3b82f6 inset;
+  }
+
+  .dx-texteditor.dx-state-focused::before {
+    border-color: #3b82f6;
+  }
+
 }
 
 .dx-theme-fluent {

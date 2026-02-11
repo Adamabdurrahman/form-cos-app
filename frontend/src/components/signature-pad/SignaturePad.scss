@@ -98,6 +98,41 @@
   gap: 12px;
   padding: 8px 0;
 
+  /* Mode toggle tabs */
+  .signature-mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid #ccc;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 4px;
+
+    .sig-tab {
+      padding: 6px 20px;
+      border: none;
+      background: #f5f5f5;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      transition: all 0.15s ease;
+      outline: none;
+
+      &:not(:last-child) {
+        border-right: 1.5px solid #ccc;
+      }
+
+      &.active {
+        background: #1976d2;
+        color: #fff;
+      }
+
+      &:hover:not(.active) {
+        background: #e8e8e8;
+      }
+    }
+  }
+
   .signature-canvas-area {
     position: relative;
     width: 100%;
@@ -125,6 +160,79 @@
       max-width: 380px;
       border-bottom: 1px dashed #ccc;
       pointer-events: none;
+    }
+  }
+
+  /* Upload area */
+  .signature-upload-area {
+    width: 100%;
+    max-width: 480px;
+
+    .upload-dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 32px 16px;
+      border: 2px dashed #bbb;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #fafafa;
+      transition: all 0.15s ease;
+
+      &:hover {
+        border-color: #1976d2;
+        background: #f0f6ff;
+      }
+
+      .upload-icon {
+        font-size: 32px;
+      }
+
+      .upload-text {
+        font-size: 13px;
+        font-weight: 500;
+        color: #555;
+      }
+
+      .upload-subtext {
+        font-size: 11px;
+        color: #999;
+      }
+    }
+
+    .upload-preview-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+
+      .upload-preview-img {
+        max-width: 100%;
+        max-height: 180px;
+        border: 2px solid #ccc;
+        border-radius: 6px;
+        object-fit: contain;
+        background: #fff;
+      }
+
+      .upload-change-btn {
+        padding: 5px 16px;
+        border: 1.5px solid #1976d2;
+        border-radius: 4px;
+        background: transparent;
+        color: #1976d2;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: #1976d2;
+          color: #fff;
+        }
+      }
     }
   }
 

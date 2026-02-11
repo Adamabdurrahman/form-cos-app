@@ -86,18 +86,29 @@ export function SubmissionList() {
         <Column dataField="createdAt" caption="Created At" dataType="datetime" width={180} />
         <Column
           caption="Actions"
-          width={100}
+          width={160}
           cellRender={(cellData) => (
-            <Button
-              icon="trash"
-              type="danger"
-              stylingMode="text"
-              hint="Delete"
-              onClick={(e) => {
-                e.event?.stopPropagation();
-                handleDelete(cellData.data.id);
-              }}
-            />
+            <div style={{ display: 'flex', gap: 4 }}>
+              <Button
+                icon="doc"
+                stylingMode="text"
+                hint="View Form"
+                onClick={(e) => {
+                  e.event?.stopPropagation();
+                  navigate(`/admin/submissions/${cellData.data.id}/view`);
+                }}
+              />
+              <Button
+                icon="trash"
+                type="danger"
+                stylingMode="text"
+                hint="Delete"
+                onClick={(e) => {
+                  e.event?.stopPropagation();
+                  handleDelete(cellData.data.id);
+                }}
+              />
+            </div>
           )}
         />
       </DataGrid>

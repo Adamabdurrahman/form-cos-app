@@ -349,3 +349,21 @@ public class CosSignatureEntry
     [ForeignKey(nameof(SubmissionId)), JsonIgnore]
     public CosSubmission? Submission { get; set; }
 }
+
+// ─── Employee Signatures (persistent per-employee) ───
+
+[Table("cos_employee_signatures")]
+public class CosEmployeeSignature
+{
+    [Key, Column("id")]
+    public int Id { get; set; }
+
+    [Required, Column("emp_id"), MaxLength(50)]
+    public string EmpId { get; set; } = null!;
+
+    [Column("signature_data", TypeName = "mediumtext")]
+    public string? SignatureData { get; set; }
+
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}

@@ -110,6 +110,72 @@ public class FormSubmissionController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = submission.Id }, new { id = submission.Id });
     }
 
+
+    // PUT api/formsubmission/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CosSubmission input)
+    {
+        var existing = await _db.CosSubmissions
+            .Include(s => s.CheckValues)
+            .Include(s => s.Problems)
+            .Include(s => s.Signatures)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (existing == null) return NotFound();
+
+        // Update header fields
+        existing.FormId = input.FormId;
+        existing.Tanggal = input.Tanggal;
+        existing.LineId = input.LineId;
+        existing.ShiftId = input.ShiftId;
+        existing.OperatorEmpId = input.OperatorEmpId;
+        existing.LeaderEmpId = input.LeaderEmpId;
+        existing.KasubsieEmpId = input.KasubsieEmpId;
+        existing.KasieEmpId = input.KasieEmpId;
+        existing.BatterySlotsJson = input.BatterySlotsJson;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        // Replace check values
+        _db.CosCheckValues.RemoveRange(existing.CheckValues);
+        if (input.CheckValues != null)
+        {
+            foreach (var cv in input.CheckValues)
+            {
+                cv.Id = 0;
+                cv.SubmissionId = existing.Id;
+                _db.CosCheckValues.Add(cv);
+            }
+        }
+
+        // Replace problems
+        _db.CosProblems.RemoveRange(existing.Problems);
+        if (input.Problems != null)
+        {
+            foreach (var p in input.Problems)
+            {
+                p.Id = 0;
+                p.SubmissionId = existing.Id;
+                _db.CosProblems.Add(p);
+            }
+        }
+
+        // Replace signatures
+        _db.CosSignatureEntries.RemoveRange(existing.Signatures);
+        if (input.Signatures != null)
+        {
+            foreach (var s in input.Signatures)
+            {
+                s.Id = 0;
+                s.SubmissionId = existing.Id;
+                _db.CosSignatureEntries.Add(s);
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { id = existing.Id });
+    }
+
+
     // DELETE api/formsubmission/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
