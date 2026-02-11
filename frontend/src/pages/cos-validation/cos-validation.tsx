@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useBlocker } from 'react-router-dom';
 import DateBox from 'devextreme-react/date-box';
 import SelectBox from 'devextreme-react/select-box';
 import NumberBox from 'devextreme-react/number-box';
@@ -85,6 +86,11 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     const signatureSlots: FormSignatureSlotDto[] = formDef?.signatureSlots ?? [];
     const slotCount = formDef?.slotCount ?? 3;
 
+    // ===== FORM PROTECTION (prevent data loss) =====
+    const STORAGE_KEY = `cos_form_draft_${formCode}`;
+    const [formTouched, setFormTouched] = useState(false);
+    const initialLoadDone = useRef(false);
+
     // ===== LOAD DATA =====
     useEffect(() => {
         async function loadData() {
@@ -118,6 +124,37 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                 const sigs: Record<string, string | null> = {};
                 fd.signatureSlots.forEach(slot => { sigs[slot.roleKey] = null; });
                 setSignatures(sigs);
+
+                // ---- Restore draft from sessionStorage ----
+                try {
+                    const draftJson = sessionStorage.getItem(`cos_form_draft_${formCode}`);
+                    if (draftJson) {
+                        const d = JSON.parse(draftJson);
+                        if (d.tanggal) setTanggal(new Date(d.tanggal));
+                        if (d.lineId != null) setLineId(d.lineId);
+                        if (d.shiftId != null) setShiftId(d.shiftId);
+                        if (d.operatorEmpId) {
+                            setOperatorEmpId(d.operatorEmpId);
+                            getHierarchy(d.operatorEmpId).then(h => {
+                                setHierarchyIds({
+                                    leaderEmpId: h.leaderEmpId,
+                                    kasubsieEmpId: h.kasubsieEmpId,
+                                    kasieEmpId: h.kasieEmpId,
+                                });
+                                setHierarchyNames({
+                                    operator: h.operatorName ?? '',
+                                    leader: h.leaderName ?? '',
+                                    kasubsie: h.kasubsieName ?? '',
+                                    kasie: h.kasieName ?? '',
+                                });
+                            }).catch(() => {});
+                        }
+                        if (d.batterySlots?.length) setBatterySlots(d.batterySlots);
+                        if (d.settings && Object.keys(d.settings).length) setSettings(d.settings);
+                        if (d.problems?.length) setProblems(d.problems);
+                        if (d.signatures) setSignatures(prev => ({ ...prev, ...d.signatures }));
+                    }
+                } catch { /* ignore corrupt data */ }
             } catch (err) {
                 console.error('Failed to load data:', err);
             } finally {
@@ -126,6 +163,53 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
         }
         loadData();
     }, [formCode]);
+
+    // Mark initial load as done (delay to let restored state settle)
+    useEffect(() => {
+        if (!loading && formDef) {
+            const t = setTimeout(() => { initialLoadDone.current = true; }, 600);
+            return () => clearTimeout(t);
+        }
+    }, [loading, formDef]);
+
+    // Track dirty state — any form field change after initial load
+    useEffect(() => {
+        if (initialLoadDone.current) setFormTouched(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tanggal, lineId, shiftId, operatorEmpId, batterySlots, settings, problems, signatures]);
+
+    // 1️⃣ Warn on browser refresh / close tab (beforeunload)
+    useEffect(() => {
+        if (!formTouched) return;
+        const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [formTouched]);
+
+    // 2️⃣ Block in-app navigation (react-router)
+    const blocker = useBlocker(formTouched);
+    useEffect(() => {
+        if (blocker.state === 'blocked') {
+            const leave = window.confirm('Data form belum disimpan. Yakin ingin pindah halaman?');
+            if (leave) blocker.proceed();
+            else blocker.reset();
+        }
+    }, [blocker]);
+
+    // 3️⃣ Auto-save to sessionStorage (debounced 400ms)
+    useEffect(() => {
+        if (!initialLoadDone.current || !formDef) return;
+        const t = setTimeout(() => {
+            const draft = {
+                tanggal: tanggal.toISOString(),
+                lineId, shiftId, operatorEmpId,
+                batterySlots, settings, problems, signatures,
+            };
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+        }, 400);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tanggal, lineId, shiftId, operatorEmpId, batterySlots, settings, problems, signatures, formDef, STORAGE_KEY]);
 
     // ===== HANDLERS =====
     const handleOperatorChange = useCallback((e: { value?: string }) => {
@@ -394,13 +478,36 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
 
         try {
             const result = await submitFormSubmission(payload);
+            sessionStorage.removeItem(STORAGE_KEY);
+            setFormTouched(false);
             alert(`Check Sheet berhasil disimpan! (ID: ${result.id})`);
         } catch (err) {
             console.error('Submit error:', err);
             alert('Gagal menyimpan. Lihat console untuk detail.');
         }
-    }, [formDef, tanggal, lineId, shiftId, operatorEmpId, hierarchyIds, batterySlots, settings, problems, problemColumns, signatures, signatureSlots]);
-
+    }, [formDef, tanggal, lineId, shiftId, operatorEmpId, hierarchyIds, batterySlots, settings, problems, problemColumns, signatures, signatureSlots, STORAGE_KEY]);
+    // ===== CLEAR FORM =====
+    const handleClearForm = useCallback(() => {
+        if (!window.confirm('Yakin ingin menghapus semua data form?\nData yang belum disimpan akan hilang.')) return;
+        setTanggal(new Date());
+        setLineId(null);
+        setShiftId(null);
+        setOperatorEmpId(null);
+        setHierarchyIds({});
+        setHierarchyNames({});
+        setBatterySlots(Array.from({ length: slotCount }, () => ({ type: null, mold: null })));
+        setSettings({});
+        const emptyRow: ProblemRow = { id: Date.now() };
+        problemColumns.forEach(col => {
+            emptyRow[col.columnKey] = col.fieldType === 'number' ? null : '';
+        });
+        setProblems([emptyRow]);
+        const sigs: Record<string, string | null> = {};
+        signatureSlots.forEach(slot => { sigs[slot.roleKey] = null; });
+        setSignatures(sigs);
+        sessionStorage.removeItem(STORAGE_KEY);
+        setFormTouched(false);
+    }, [slotCount, problemColumns, signatureSlots, STORAGE_KEY]);
     // ===== MAIN RENDER =====
     if (loading || !formDef) {
         return (
@@ -648,6 +755,14 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
 
                         {/* ==================== FOOTER / SUBMIT ==================== */}
                         <div className="form-footer">
+                            <Button
+                                text="Clear Form"
+                                icon="revert"
+                                type="danger"
+                                stylingMode="outlined"
+                                height={36}
+                                onClick={handleClearForm}
+                            />
                             <Button
                                 text="Simpan Check Sheet"
                                 type="default"
