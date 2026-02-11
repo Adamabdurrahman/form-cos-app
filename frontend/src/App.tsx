@@ -17,6 +17,7 @@ import { SubmissionDetail } from './pages/admin/submission-detail';
 import { SubmissionResponse } from './pages/admin/submission-response';
 import { PersonnelPage } from './pages/admin/personnel';
 import { BatteryTypesPage } from './pages/admin/battery-types';
+import { ProfilePage } from './pages';
 
 export default function Root() {
   const screenSizeClass = useScreenSizeClass();

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import './admin-layout.scss';
 
@@ -10,10 +11,22 @@ const navItems = [
 ];
 
 export function AdminLayout() {
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
-    <div className="admin-layout">
+    <div className={`admin-layout${collapsed ? ' sidebar-collapsed' : ''}`}>
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-header">Admin Panel</div>
+        <div className="admin-sidebar-header">
+          {!collapsed && <span>Admin Panel</span>}
+          <button
+            className="sidebar-toggle-btn"
+            onClick={() => setCollapsed((c) => !c)}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            type="button"
+          >
+            <i className={collapsed ? 'dx-icon-chevronnext' : 'dx-icon-chevronprev'} />
+          </button>
+        </div>
         <nav className="admin-sidebar-nav">
           {navItems.map((item) => (
             <NavLink
@@ -21,14 +34,15 @@ export function AdminLayout() {
               to={item.path}
               end={item.end}
               className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+              title={collapsed ? item.text : undefined}
             >
               <i className={item.icon} />
-              <span>{item.text}</span>
+              {!collapsed && <span>{item.text}</span>}
             </NavLink>
           ))}
         </nav>
         <div className="admin-sidebar-footer">
-          <a href="/">← Back to App</a>
+          <a href="/" title="Back to App">{collapsed ? '←' : '← Back to App'}</a>
         </div>
       </aside>
       <main className="admin-content">
