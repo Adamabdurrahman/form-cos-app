@@ -41,6 +41,7 @@ public class FormCosDbContext : DbContext
     public DbSet<CosProblem> CosProblems => Set<CosProblem>();
     public DbSet<CosSignatureEntry> CosSignatureEntries => Set<CosSignatureEntry>();
     public DbSet<CosEmployeeSignature> CosEmployeeSignatures => Set<CosEmployeeSignature>();
+    public DbSet<CosLineBatteryType> CosLineBatteryTypes => Set<CosLineBatteryType>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,6 +75,9 @@ public class FormCosDbContext : DbContext
 
         modelBuilder.Entity<CosEmployeeSignature>()
             .HasIndex(es => es.EmpId).IsUnique();
+
+        modelBuilder.Entity<CosLineBatteryType>()
+            .HasIndex(lb => new { lb.LineId, lb.BatteryTypeId }).IsUnique();
 
         // ═══ Cascades ═══
         modelBuilder.Entity<CosSubmission>()
@@ -394,6 +398,44 @@ public class FormCosDbContext : DbContext
             new TlkpMold { MoldCode = "COS-B02", MoldDescription = "Mold COS B02", MoldStatus = "1", IdSection = 1 },
             new TlkpMold { MoldCode = "COS-C01", MoldDescription = "Mold COS C01", MoldStatus = "1", IdSection = 1 },
             new TlkpMold { MoldCode = "COS-C02", MoldDescription = "Mold COS C02", MoldStatus = "1", IdSection = 1 }
+        );
+
+        // ══════════════════════════════════════════
+        // LINE ↔ BATTERY TYPE MAPPING
+        // ══════════════════════════════════════════
+        // Lines 2-5 produce NS40ZL, NS60L, 34B19LS
+        // Lines 6-7 produce N50Z, N70Z, 34B19LS OE TYT
+        // Line 8 produces NS40ZL, NS60L, 34B19LS, 34B19LS OE TYT
+        mb.Entity<CosLineBatteryType>().HasData(
+            // Line 2
+            new CosLineBatteryType { Id = 1, LineId = 2, BatteryTypeId = 1 },
+            new CosLineBatteryType { Id = 2, LineId = 2, BatteryTypeId = 2 },
+            new CosLineBatteryType { Id = 3, LineId = 2, BatteryTypeId = 3 },
+            // Line 3
+            new CosLineBatteryType { Id = 4, LineId = 3, BatteryTypeId = 1 },
+            new CosLineBatteryType { Id = 5, LineId = 3, BatteryTypeId = 2 },
+            new CosLineBatteryType { Id = 6, LineId = 3, BatteryTypeId = 3 },
+            // Line 4
+            new CosLineBatteryType { Id = 7, LineId = 4, BatteryTypeId = 1 },
+            new CosLineBatteryType { Id = 8, LineId = 4, BatteryTypeId = 2 },
+            new CosLineBatteryType { Id = 9, LineId = 4, BatteryTypeId = 3 },
+            // Line 5
+            new CosLineBatteryType { Id = 10, LineId = 5, BatteryTypeId = 1 },
+            new CosLineBatteryType { Id = 11, LineId = 5, BatteryTypeId = 2 },
+            new CosLineBatteryType { Id = 12, LineId = 5, BatteryTypeId = 3 },
+            // Line 6
+            new CosLineBatteryType { Id = 13, LineId = 6, BatteryTypeId = 4 },
+            new CosLineBatteryType { Id = 14, LineId = 6, BatteryTypeId = 5 },
+            new CosLineBatteryType { Id = 15, LineId = 6, BatteryTypeId = 6 },
+            // Line 7
+            new CosLineBatteryType { Id = 16, LineId = 7, BatteryTypeId = 4 },
+            new CosLineBatteryType { Id = 17, LineId = 7, BatteryTypeId = 5 },
+            new CosLineBatteryType { Id = 18, LineId = 7, BatteryTypeId = 6 },
+            // Line 8
+            new CosLineBatteryType { Id = 19, LineId = 8, BatteryTypeId = 1 },
+            new CosLineBatteryType { Id = 20, LineId = 8, BatteryTypeId = 2 },
+            new CosLineBatteryType { Id = 21, LineId = 8, BatteryTypeId = 3 },
+            new CosLineBatteryType { Id = 22, LineId = 8, BatteryTypeId = 6 }
         );
     }
 }

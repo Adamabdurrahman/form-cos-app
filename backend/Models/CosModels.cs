@@ -255,6 +255,9 @@ public class CosSubmission
     [Column("shift_id")]
     public int? ShiftId { get; set; }
 
+    [Column("group_id")]
+    public int? GroupId { get; set; }
+
     /// <summary>Operator's emp_id from tlkp_operator / VIEW_DATAAUTH</summary>
     [Column("operator_emp_id"), MaxLength(50)]
     public string? OperatorEmpId { get; set; }
@@ -277,6 +280,35 @@ public class CosSubmission
     /// </summary>
     [Column("battery_slots_json", TypeName = "text")]
     public string? BatterySlotsJson { get; set; }
+
+    // ─── Approval workflow fields ───
+    /// <summary>pending_leader, pending_kasubsie, pending_kasie, completed</summary>
+    [Column("status"), MaxLength(30)]
+    public string Status { get; set; } = "pending_leader";
+
+    [Column("has_ng")]
+    public bool HasNg { get; set; } = false;
+
+    [Column("operator_signed_at")]
+    public DateTime? OperatorSignedAt { get; set; }
+
+    [Column("leader_signed_at")]
+    public DateTime? LeaderSignedAt { get; set; }
+
+    [Column("kasubsie_signed_at")]
+    public DateTime? KasubsieSignedAt { get; set; }
+
+    [Column("kasie_signed_at")]
+    public DateTime? KasieSignedAt { get; set; }
+
+    [Column("leader_memo", TypeName = "text")]
+    public string? LeaderMemo { get; set; }
+
+    [Column("kasubsie_memo", TypeName = "text")]
+    public string? KasubsieMemo { get; set; }
+
+    [Column("kasie_memo", TypeName = "text")]
+    public string? KasieMemo { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -346,6 +378,9 @@ public class CosSignatureEntry
     [Column("signature_data", TypeName = "mediumtext")]
     public string? SignatureData { get; set; }
 
+    [Column("signed_at")]
+    public DateTime? SignedAt { get; set; }
+
     [ForeignKey(nameof(SubmissionId)), JsonIgnore]
     public CosSubmission? Submission { get; set; }
 }
@@ -366,4 +401,22 @@ public class CosEmployeeSignature
 
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// ─── Line ↔ BatteryType mapping ───
+
+[Table("cos_line_battery_types")]
+public class CosLineBatteryType
+{
+    [Key, Column("id")]
+    public int Id { get; set; }
+
+    [Column("line_id")]
+    public int LineId { get; set; }
+
+    [Column("battery_type_id")]
+    public int BatteryTypeId { get; set; }
+
+    [ForeignKey(nameof(BatteryTypeId))]
+    public CosBatteryType? BatteryType { get; set; }
 }

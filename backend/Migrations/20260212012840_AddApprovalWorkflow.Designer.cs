@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data;
 
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(FormCosDbContext))]
-    partial class FormCosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260212012840_AddApprovalWorkflow")]
+    partial class AddApprovalWorkflow
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1730,167 +1733,6 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.CosLineBatteryType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BatteryTypeId")
-                        .HasColumnType("int")
-                        .HasColumnName("battery_type_id");
-
-                    b.Property<int>("LineId")
-                        .HasColumnType("int")
-                        .HasColumnName("line_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BatteryTypeId");
-
-                    b.HasIndex("LineId", "BatteryTypeId")
-                        .IsUnique();
-
-                    b.ToTable("cos_line_battery_types");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            BatteryTypeId = 1,
-                            LineId = 2
-                        },
-                        new
-                        {
-                            Id = 2,
-                            BatteryTypeId = 2,
-                            LineId = 2
-                        },
-                        new
-                        {
-                            Id = 3,
-                            BatteryTypeId = 3,
-                            LineId = 2
-                        },
-                        new
-                        {
-                            Id = 4,
-                            BatteryTypeId = 1,
-                            LineId = 3
-                        },
-                        new
-                        {
-                            Id = 5,
-                            BatteryTypeId = 2,
-                            LineId = 3
-                        },
-                        new
-                        {
-                            Id = 6,
-                            BatteryTypeId = 3,
-                            LineId = 3
-                        },
-                        new
-                        {
-                            Id = 7,
-                            BatteryTypeId = 1,
-                            LineId = 4
-                        },
-                        new
-                        {
-                            Id = 8,
-                            BatteryTypeId = 2,
-                            LineId = 4
-                        },
-                        new
-                        {
-                            Id = 9,
-                            BatteryTypeId = 3,
-                            LineId = 4
-                        },
-                        new
-                        {
-                            Id = 10,
-                            BatteryTypeId = 1,
-                            LineId = 5
-                        },
-                        new
-                        {
-                            Id = 11,
-                            BatteryTypeId = 2,
-                            LineId = 5
-                        },
-                        new
-                        {
-                            Id = 12,
-                            BatteryTypeId = 3,
-                            LineId = 5
-                        },
-                        new
-                        {
-                            Id = 13,
-                            BatteryTypeId = 4,
-                            LineId = 6
-                        },
-                        new
-                        {
-                            Id = 14,
-                            BatteryTypeId = 5,
-                            LineId = 6
-                        },
-                        new
-                        {
-                            Id = 15,
-                            BatteryTypeId = 6,
-                            LineId = 6
-                        },
-                        new
-                        {
-                            Id = 16,
-                            BatteryTypeId = 4,
-                            LineId = 7
-                        },
-                        new
-                        {
-                            Id = 17,
-                            BatteryTypeId = 5,
-                            LineId = 7
-                        },
-                        new
-                        {
-                            Id = 18,
-                            BatteryTypeId = 6,
-                            LineId = 7
-                        },
-                        new
-                        {
-                            Id = 19,
-                            BatteryTypeId = 1,
-                            LineId = 8
-                        },
-                        new
-                        {
-                            Id = 20,
-                            BatteryTypeId = 2,
-                            LineId = 8
-                        },
-                        new
-                        {
-                            Id = 21,
-                            BatteryTypeId = 3,
-                            LineId = 8
-                        },
-                        new
-                        {
-                            Id = 22,
-                            BatteryTypeId = 6,
-                            LineId = 8
-                        });
-                });
-
             modelBuilder.Entity("backend.Models.CosProblem", b =>
                 {
                     b.Property<int>("Id")
@@ -2154,10 +1996,6 @@ namespace backend.Migrations
                     b.Property<int>("FormId")
                         .HasColumnType("int")
                         .HasColumnName("form_id");
-
-                    b.Property<int?>("GroupId")
-                        .HasColumnType("int")
-                        .HasColumnName("group_id");
 
                     b.Property<bool>("HasNg")
                         .HasColumnType("tinyint(1)")
@@ -3626,17 +3464,6 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Submission");
-                });
-
-            modelBuilder.Entity("backend.Models.CosLineBatteryType", b =>
-                {
-                    b.HasOne("backend.Models.CosBatteryType", "BatteryType")
-                        .WithMany()
-                        .HasForeignKey("BatteryTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BatteryType");
                 });
 
             modelBuilder.Entity("backend.Models.CosProblem", b =>

@@ -11,15 +11,31 @@ public class PersonnelController : ControllerBase
     private readonly FormCosDbContext _db;
     public PersonnelController(FormCosDbContext db) => _db = db;
 
-    // GET api/personnel/operators
+    // GET api/personnel/operators?lineId=2&groupId=1  (optional filters)
     [HttpGet("operators")]
-    public async Task<IActionResult> GetOperators()
+    public async Task<IActionResult> GetOperators([FromQuery] int? lineId, [FromQuery] int? groupId)
     {
+        // Get lgp_ids for this line (if filtered)
+        List<int>? lgpIds = null;
+        if (lineId.HasValue)
+        {
+            lgpIds = await _db.TlkpLineGroups
+                .Where(lg => lg.LineId == lineId.Value && lg.LgpStatus == 1)
+                .Select(lg => lg.LgpId)
+                .ToListAsync();
+        }
+
+        var query = _db.TlkpOperators.AsQueryable();
+        if (lgpIds != null)
+            query = query.Where(op => op.LgpId != null && lgpIds.Contains(op.LgpId.Value));
+        if (groupId.HasValue)
+            query = query.Where(op => op.GroupId == groupId.Value);
+
         var operators = await (
-            from op in _db.TlkpOperators
+            from op in query
             join auth in _db.ViewDataAuths on op.UserId equals auth.EmpId into authJoin
             from a in authJoin.DefaultIfEmpty()
-            select new { empId = op.UserId, name = a != null ? a.FullName : op.UserId, empNo = a != null ? a.EmpNo : null, lgpId = op.LgpId, groupId = op.GroupId }
+            select new { empId = op.UserId, name = a != null ? a.FullName : op.UserId, empNo = a != null ? a.EmpNo : (string?)null, lgpId = op.LgpId, groupId = op.GroupId }
         ).ToListAsync();
         return Ok(operators);
     }
@@ -38,7 +54,6 @@ public class PersonnelController : ControllerBase
             .Select(a => new { empId = a.EmpId, name = a.FullName, empNo = a.EmpNo })
             .ToListAsync();
 
-        // include any emp_ids not found in ViewDataAuth
         var foundIds = leaders.Select(l => l.empId).ToHashSet();
         var missing = leaderEmpIds.Where(e => !foundIds.Contains(e))
             .Select(e => new { empId = e, name = e, empNo = (string?)null });
@@ -113,9 +128,9 @@ public class PersonnelController : ControllerBase
 
         var authLookup = await _db.ViewDataAuths
             .Where(a => allEmpIds.Contains(a.EmpId))
-            .ToDictionaryAsync(a => a.EmpId, a => a.FullName);
+            .ToDictionaryAsync(a => a.EmpId!, a => a.FullName);
 
-        string ResolveName(string? empId) => empId != null && authLookup.TryGetValue(empId, out var n) ? n : empId ?? "";
+        string ResolveName(string? empId) => empId != null && authLookup.TryGetValue(empId, out var n) ? n ?? empId : empId ?? "";
 
         return Ok(new
         {

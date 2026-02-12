@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "XZ9NU1GHOq6iDCTYo55Ic9V5p3yEh0ytEfCgxVwdMU0=",
+  "Hash": "1zp427EUVhMfScSVq6Mao+FGdWw94QZ9/JAVi0HyDdw=",
   "Source": "backend",
   "BasePath": "_content/backend",
   "Mode": "Default",
@@ -93,12 +93,12 @@
       "OriginalItemSpec": "wwwroot/assets/GS-wDFf28Fm.png"
     },
     {
-      "Identity": "/home/ubuntu/gs/form/backend/wwwroot/assets/index-D3E6iHhE.js",
+      "Identity": "/home/ubuntu/gs/form/backend/wwwroot/assets/index-BTKUeKkk.js",
       "SourceId": "backend",
       "SourceType": "Discovered",
       "ContentRoot": "/home/ubuntu/gs/form/backend/wwwroot/",
       "BasePath": "_content/backend",
-      "RelativePath": "assets/index-D3E6iHhE.js",
+      "RelativePath": "assets/index-BTKUeKkk.js",
       "AssetKind": "All",
       "AssetMode": "All",
       "AssetRole": "Primary",
@@ -109,15 +109,15 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot/assets/index-D3E6iHhE.js"
+      "OriginalItemSpec": "wwwroot/assets/index-BTKUeKkk.js"
     },
     {
-      "Identity": "/home/ubuntu/gs/form/backend/wwwroot/assets/index-DuZM7u8L.css",
+      "Identity": "/home/ubuntu/gs/form/backend/wwwroot/assets/index-D4HAaftu.css",
       "SourceId": "backend",
       "SourceType": "Discovered",
       "ContentRoot": "/home/ubuntu/gs/form/backend/wwwroot/",
       "BasePath": "_content/backend",
-      "RelativePath": "assets/index-DuZM7u8L.css",
+      "RelativePath": "assets/index-D4HAaftu.css",
       "AssetKind": "All",
       "AssetMode": "All",
       "AssetRole": "Primary",
@@ -128,7 +128,7 @@
       "AssetTraitValue": "",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot/assets/index-DuZM7u8L.css"
+      "OriginalItemSpec": "wwwroot/assets/index-D4HAaftu.css"
     },
     {
       "Identity": "/home/ubuntu/gs/form/backend/wwwroot/favicon.ico",

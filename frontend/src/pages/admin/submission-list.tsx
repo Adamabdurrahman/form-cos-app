@@ -83,6 +83,31 @@ export function SubmissionList() {
         <Column dataField="lineId" caption="Line" width={70} />
         <Column dataField="shiftId" caption="Shift" width={70} />
         <Column dataField="operatorName" caption="Operator" />
+        <Column
+          dataField="status"
+          caption="Status"
+          width={150}
+          cellRender={(cellData) => {
+            const s = cellData.data.status as string | undefined;
+            const hasNgFlag = cellData.data.hasNg;
+            let label = 'Pending Leader';
+            let bg = '#fff3cd';
+            let color = '#856404';
+            if (s === 'pending_kasubsie') { label = 'Pending Kasubsie'; bg = '#cce5ff'; color = '#004085'; }
+            else if (s === 'pending_kasie') { label = 'Pending Kasie'; bg = '#e2d5f1'; color = '#5a2d82'; }
+            else if (s === 'completed') { label = 'Completed'; bg = '#d4edda'; color = '#155724'; }
+            return (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                background: bg, color: color, whiteSpace: 'nowrap',
+              }}>
+                {label}
+                {hasNgFlag && <span title="Has NG" style={{ color: '#dc3545', fontWeight: 700 }}>⚠</span>}
+              </span>
+            );
+          }}
+        />
         <Column dataField="createdAt" caption="Created At" dataType="datetime" width={180} />
         <Column
           caption="Actions"
