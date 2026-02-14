@@ -1,0 +1,519 @@
+// ══════════════════════════════════════════════════════════════
+// GS Battery — COS Validation Form Database Schema
+// Database: MySQL (form_cos)
+// Generated for: https://dbdiagram.io
+// ══════════════════════════════════════════════════════════════
+
+// ┌─────────────────────────────────────────────────┐
+// │         MASTER DATA TABLES (from db_master_data) │
+// │         Organizational Hierarchy                  │
+// └─────────────────────────────────────────────────┘
+
+Table tlkp_plant {
+  plant_id integer [primary key]
+  plant_code varchar(10)
+  plant_name varchar(50)
+  plant_status integer
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+
+  Note: 'Master data pabrik / plant'
+}
+
+Table tlkp_divisi {
+  div_id integer [primary key]
+  div_name varchar(100)
+  div_status integer
+  plant_id integer
+  div_head varchar(50)
+  div_kode varchar(50)
+  div_initial varchar(50)
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+
+  Note: 'Master data divisi'
+}
+
+Table tlkp_departemen {
+  dep_id integer [primary key]
+  dep_name varchar(100)
+  dep_status integer
+  plant_id integer
+  dep_head varchar(50)
+  dep_kode varchar(50)
+  div_id varchar(50)
+  dep_initial varchar(50)
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+
+  Note: 'Master data departemen'
+}
+
+Table tlkp_section {
+  sec_id integer [primary key]
+  sec_name varchar(50)
+  dep_id integer
+  sec_status integer
+  sec_head varchar(50)
+  sec_kode varchar(50)
+  sec_plant integer
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+
+  Note: 'Master data seksi / section'
+}
+
+Table tlkp_line {
+  line_id integer [primary key]
+  line_name varchar(100)
+  line_status integer
+  sec_id integer
+  crea_date datetime
+  crea_by varchar(50)
+  modi_by varchar(50)
+  modi_date datetime
+  work_center varchar(50)
+  line_ket varchar(50)
+  line_plant integer
+  userKasie_id integer
+
+  Note: 'Master data line produksi. Digunakan di dropdown Line pada form COS.'
+}
+
+Table tlkp_group {
+  group_id integer [primary key]
+  group_name varchar(100)
+  group_status integer
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+
+  Note: 'Master data grup kerja'
+}
+
+Table tlkp_shift {
+  shift_id integer [primary key]
+  shift_name varchar(100)
+  shift_start time
+  shift_end time
+  shift_status integer
+  shift_plan varchar(50)
+  shift_code varchar(50)
+
+  Note: 'Master data shift kerja. Digunakan di dropdown Shift pada form COS.'
+}
+
+// ┌─────────────────────────────────────────────────┐
+// │         MASTER DATA — Personnel / HR             │
+// └─────────────────────────────────────────────────┘
+
+Table tlkp_lineGroup {
+  lgp_id integer [primary key]
+  line_id integer
+  group_id integer
+  lgp_status integer
+  lgp_leader varchar(50) [note: 'emp_id of Leader']
+  lgp_kasubsie varchar(50) [note: 'emp_id of Kasubsie']
+  lgp_plant integer
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+  userKasie_id integer
+
+  Note: 'Mapping Line + Group → Leader, Kasubsie, Kasie. Kunci utama untuk hierarchy personnel.'
+}
+
+Table tlkp_operator {
+  user_id varchar(50) [note: 'emp_id dari operator']
+  jopr_id integer [note: 'FK ke tlkp_job']
+  lgp_id integer
+  klasifikasi varchar(50)
+  group_id integer
+  userKasie_id integer
+  update_date datetime
+
+  indexes {
+    (user_id, jopr_id) [pk]
+  }
+
+  Note: 'Master data operator. Composite PK (user_id + jopr_id). Digunakan di dropdown Operator pada form COS.'
+}
+
+Table tlkp_userKasie {
+  userKasie_id integer [primary key]
+  sec_id integer
+  kasie_emp_id varchar(20) [not null, note: 'emp_id Kasie']
+  create_date datetime
+
+  Note: 'Mapping Kasie ke Section. Digunakan untuk resolve Kasie dalam hierarchy.'
+}
+
+Table tlkp_user {
+  user_npk varchar(10) [primary key]
+  user_nama varchar(100)
+  user_namafull varchar(100)
+  user_pass varchar(50)
+  user_email varchar(50)
+  user_role varchar(50)
+  user_lastLogin datetime
+  user_createBy varchar(10)
+  user_modifBy varchar(10)
+  user_createDate datetime
+  user_modifDate datetime
+  user_status integer
+  emp_id varchar(50)
+  dept_id varchar(50)
+  user_plant integer
+
+  Note: 'Master data user / login'
+}
+
+Table VIEW_DATAAUTH {
+  id_recnum bigint [primary key]
+  emp_id varchar(50) [note: 'Employee ID — digunakan sebagai key utama personnel']
+  first_name varchar(50)
+  last_name varchar(50)
+  Full_Name varchar(302)
+  emp_no varchar(50)
+  email varchar(100)
+  status tinyint
+  position_id integer
+  pos_name_id varchar(100)
+  dept_id integer
+  company_id integer
+
+  Note: 'View dari Sunfish HR. Sumber nama karyawan (emp_id → Full_Name). Digunakan untuk resolve semua nama di form COS.'
+}
+
+Table VIEW_EMPLOYEE {
+  emp_id varchar(50)
+  plant varchar(50)
+  npk varchar(50)
+  dep_id bigint
+  dep varchar(100)
+  sec_id bigint
+  sec varchar(100)
+
+  Note: 'View karyawan sederhana (keyless, read-only)'
+}
+
+// ┌─────────────────────────────────────────────────┐
+// │         MASTER DATA — Product / Mold             │
+// └─────────────────────────────────────────────────┘
+
+Table tlkp_kategori {
+  kat_id integer [primary key]
+  kat_name varchar(100)
+  kat_status integer
+  item_pch varchar(50)
+  kat_plant integer
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+
+  Note: 'Kategori item / produk'
+}
+
+Table tlkp_item {
+  item_num varchar(100) [note: 'Nomor item']
+  kat_id integer
+  item_status integer
+  item_desc varchar(500)
+  series_id integer
+  item_na varchar(10)
+  item_asam integer
+  item_ds varchar(10)
+  item_lot integer
+  item_keterangan varchar(50)
+  item_tgl datetime
+  creadate datetime
+  creaby varchar(50)
+  modidate datetime
+  modiby varchar(50)
+
+  indexes {
+    (item_num, kat_id) [pk]
+  }
+
+  Note: 'Master data item / produk'
+}
+
+Table tlkp_series {
+  series_id integer [primary key]
+  series_name varchar(10)
+  created_by varchar(50)
+  created_date datetime
+  modif_by varchar(50)
+  modif_date datetime
+  series_status integer
+  series_plant integer
+
+  Note: 'Master data series'
+}
+
+Table tlkp_mold {
+  mold_code varchar(50) [primary key]
+  mold_description varchar(100)
+  item_num varchar(100)
+  mold_sts varchar(50)
+  created_by varchar(50)
+  created_date datetime
+  modif_by varchar(50)
+  modif_date datetime
+  mold_status varchar(50)
+  id_section integer
+
+  Note: 'Master data cetakan / mold. Digunakan di dropdown Mold pada form COS.'
+}
+
+Table tlkp_moldtype {
+  id integer [primary key]
+  mt_name varchar(50)
+  mt_status integer
+  mt_createBy varchar(10)
+  mt_createDate datetime
+  mt_modifBy varchar(10)
+  mt_modifDate datetime
+  mt_plant integer
+
+  Note: 'Tipe mold'
+}
+
+Table tlkp_job {
+  jopr_id integer [primary key]
+  jopr_name varchar(100)
+  jopr_status integer
+  sec_id integer
+  jopr_alias varchar(50)
+  create_date datetime
+  create_by varchar(50)
+  modify_date datetime
+  modify_by varchar(50)
+  userKasie_id integer
+
+  Note: 'Master data jabatan / job operator'
+}
+
+// ══════════════════════════════════════════════════════════════
+// COS VALIDATION FORM TABLES (aplikasi baru)
+// ══════════════════════════════════════════════════════════════
+
+// ┌─────────────────────────────────────────────────┐
+// │         COS — Form Definition & Structure        │
+// └─────────────────────────────────────────────────┘
+
+Table cos_form_definitions {
+  id integer [primary key, increment]
+  code varchar(50) [unique, not null]
+  title varchar(200) [not null]
+  subtitle varchar(300)
+  doc_number varchar(50)
+  revision varchar(20)
+  effective_date datetime
+  slot_count integer [default: 5]
+  is_active boolean [default: true]
+  created_at datetime
+  updated_at datetime
+
+  Note: 'Definisi form COS (e.g. COS_VALIDATION = Form-A2 1-K.051-5-2)'
+}
+
+Table cos_check_items {
+  id integer [primary key, increment]
+  form_id integer [not null]
+  item_key varchar(100) [not null]
+  label varchar(300) [not null]
+  type varchar(30) [not null, note: 'visual | numeric | conditional']
+  visual_standard varchar(200)
+  numeric_std_key varchar(100) [note: 'Key ke cos_battery_standards.param_key']
+  fixed_standard varchar(100)
+  fixed_min decimal(18,4)
+  fixed_max decimal(18,4)
+  frequency varchar(100)
+  keterangan varchar(300)
+  conditional_label varchar(200)
+  sort_order integer
+
+  Note: 'Item pengecekan COS (32 items: visual check, numeric measurement, conditional)'
+}
+
+Table cos_check_sub_rows {
+  id integer [primary key, increment]
+  check_item_id integer [not null]
+  suffix varchar(30) [not null]
+  label varchar(200) [not null]
+  fixed_standard varchar(100)
+  fixed_min decimal(18,4)
+  fixed_max decimal(18,4)
+  sort_order integer
+
+  Note: 'Sub-baris pengecekan (e.g. temperatur pagi/siang/sore pada satu check item)'
+}
+
+Table cos_battery_types {
+  id integer [primary key, increment]
+  name varchar(100) [not null, note: 'e.g. NS40ZL, NS60LS, N100']
+  kat_id integer [note: 'Optional link ke tlkp_kategori']
+
+  Note: 'Tipe baterai yang divalidasi COS (6 types)'
+}
+
+Table cos_battery_standards {
+  id integer [primary key, increment]
+  battery_type_id integer [not null]
+  param_key varchar(100) [not null, note: 'e.g. coolingFlowRate, castingTemp']
+  value varchar(100) [not null, note: 'Display value, e.g. "5 - 9"']
+  min_value decimal(18,4)
+  max_value decimal(18,4)
+
+  Note: 'Standar parameter per tipe baterai (96 standards total). Min/max digunakan untuk validasi input.'
+}
+
+Table cos_problem_columns {
+  id integer [primary key, increment]
+  form_id integer [not null]
+  column_key varchar(50) [not null]
+  label varchar(100) [not null]
+  field_type varchar(30) [not null, note: 'text | number | date | select']
+  width varchar(20) [not null]
+  sort_order integer
+
+  Note: 'Definisi kolom tabel masalah di bawah form (6 columns)'
+}
+
+Table cos_signature_slots {
+  id integer [primary key, increment]
+  form_id integer [not null]
+  role_key varchar(50) [not null, note: 'operator | leader | kasubsie | kasie']
+  label varchar(100) [not null]
+  sort_order integer
+
+  Note: 'Slot tanda tangan pada form (4 slots)'
+}
+
+// ┌─────────────────────────────────────────────────┐
+// │         COS — Submission Data (form filled)      │
+// └─────────────────────────────────────────────────┘
+
+Table cos_submissions {
+  id integer [primary key, increment]
+  form_id integer [not null]
+  tanggal datetime [not null, note: 'Tanggal pengisian']
+  line_id integer [note: 'FK ke tlkp_line']
+  shift_id integer [note: 'FK ke tlkp_shift']
+  operator_emp_id varchar(50) [note: 'emp_id operator']
+  leader_emp_id varchar(50) [note: 'emp_id leader']
+  kasubsie_emp_id varchar(50) [note: 'emp_id kasubsie']
+  kasie_emp_id varchar(50) [note: 'emp_id kasie']
+  battery_slots_json text [note: 'JSON: [{type,mold}, ...]']
+  created_at datetime
+  updated_at datetime
+
+  Note: 'Data submission form COS yang telah diisi operator'
+}
+
+Table cos_check_values {
+  id integer [primary key, increment]
+  submission_id integer [not null]
+  setting_key varchar(200) [not null, note: 'e.g. slot_0_castingTemp, item_5_visual']
+  value varchar(500)
+
+  Note: 'Nilai-nilai pengecekan per submission'
+}
+
+Table cos_problems {
+  id integer [primary key, increment]
+  submission_id integer [not null]
+  sort_order integer
+  values_json text [note: 'JSON per baris masalah']
+
+  Note: 'Data masalah yang dicatat operator per submission'
+}
+
+Table cos_signature_entries {
+  id integer [primary key, increment]
+  submission_id integer [not null]
+  role_key varchar(50) [not null]
+  signature_data mediumtext [note: 'Base64 encoded signature image']
+
+  Note: 'Tanda tangan digital per submission'
+}
+
+// ══════════════════════════════════════════════════════════════
+// REFERENCES / RELATIONSHIPS
+// ══════════════════════════════════════════════════════════════
+
+// ── Master Data: Organizational Hierarchy ──
+Ref md_divisi_plant: tlkp_divisi.plant_id > tlkp_plant.plant_id
+Ref md_dept_plant: tlkp_departemen.plant_id > tlkp_plant.plant_id
+Ref md_dept_divisi: tlkp_departemen.div_id > tlkp_divisi.div_id
+Ref md_section_dept: tlkp_section.dep_id > tlkp_departemen.dep_id
+Ref md_line_section: tlkp_line.sec_id > tlkp_section.sec_id
+Ref md_line_kasie: tlkp_line.userKasie_id > tlkp_userKasie.userKasie_id
+
+// ── Master Data: Line Group (Leader & Kasubsie mapping) ──
+Ref md_lg_line: tlkp_lineGroup.line_id > tlkp_line.line_id
+Ref md_lg_group: tlkp_lineGroup.group_id > tlkp_group.group_id
+Ref md_lg_leader: tlkp_lineGroup.lgp_leader > VIEW_DATAAUTH.emp_id
+Ref md_lg_kasubsie: tlkp_lineGroup.lgp_kasubsie > VIEW_DATAAUTH.emp_id
+Ref md_lg_kasie: tlkp_lineGroup.userKasie_id > tlkp_userKasie.userKasie_id
+
+// ── Master Data: Operator ──
+Ref md_opr_lgp: tlkp_operator.lgp_id > tlkp_lineGroup.lgp_id
+Ref md_opr_job: tlkp_operator.jopr_id > tlkp_job.jopr_id
+Ref md_opr_group: tlkp_operator.group_id > tlkp_group.group_id
+Ref md_opr_kasie: tlkp_operator.userKasie_id > tlkp_userKasie.userKasie_id
+Ref md_opr_auth: tlkp_operator.user_id > VIEW_DATAAUTH.emp_id
+
+// ── Master Data: Kasie ──
+Ref md_kasie_section: tlkp_userKasie.sec_id > tlkp_section.sec_id
+Ref md_kasie_auth: tlkp_userKasie.kasie_emp_id > VIEW_DATAAUTH.emp_id
+
+// ── Master Data: Job ──
+Ref md_job_section: tlkp_job.sec_id > tlkp_section.sec_id
+Ref md_job_kasie: tlkp_job.userKasie_id > tlkp_userKasie.userKasie_id
+
+// ── Master Data: User ──
+Ref md_user_auth: tlkp_user.emp_id > VIEW_DATAAUTH.emp_id
+
+// ── Master Data: Item / Mold / Series ──
+Ref md_item_kategori: tlkp_item.kat_id > tlkp_kategori.kat_id
+Ref md_item_series: tlkp_item.series_id > tlkp_series.series_id
+Ref md_mold_section: tlkp_mold.id_section > tlkp_section.sec_id
+
+// ── COS: Form Definition → Children ──
+Ref cos_ci_form: cos_check_items.form_id > cos_form_definitions.id
+Ref cos_sr_ci: cos_check_sub_rows.check_item_id > cos_check_items.id
+Ref cos_pc_form: cos_problem_columns.form_id > cos_form_definitions.id
+Ref cos_ss_form: cos_signature_slots.form_id > cos_form_definitions.id
+
+// ── COS: Battery Standards ──
+Ref cos_bs_bt: cos_battery_standards.battery_type_id > cos_battery_types.id
+Ref cos_bt_kat: cos_battery_types.kat_id > tlkp_kategori.kat_id
+
+// ── COS: Submission → Form Definition ──
+Ref cos_sub_form: cos_submissions.form_id > cos_form_definitions.id
+
+// ── COS: Submission → Master Data (Line, Shift, Personnel) ──
+Ref cos_sub_line: cos_submissions.line_id > tlkp_line.line_id
+Ref cos_sub_shift: cos_submissions.shift_id > tlkp_shift.shift_id
+Ref cos_sub_operator: cos_submissions.operator_emp_id > VIEW_DATAAUTH.emp_id
+Ref cos_sub_leader: cos_submissions.leader_emp_id > VIEW_DATAAUTH.emp_id
+Ref cos_sub_kasubsie: cos_submissions.kasubsie_emp_id > VIEW_DATAAUTH.emp_id
+Ref cos_sub_kasie: cos_submissions.kasie_emp_id > VIEW_DATAAUTH.emp_id
+
+// ── COS: Submission → Children ──
+Ref cos_cv_sub: cos_check_values.submission_id > cos_submissions.id
+Ref cos_prob_sub: cos_problems.submission_id > cos_submissions.id
+Ref cos_sig_sub: cos_signature_entries.submission_id > cos_submissions.id

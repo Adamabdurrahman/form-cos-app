@@ -1,0 +1,252 @@
+================================================================================
+  PROJECT PROGRESS LOG — Form COS (CheckSheet)
+  Last Updated : [hari ini, akhir sesi coding — Sesi 2]
+  Author       : Technical Lead (onboarding session)
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+ 1. STATUS TERKINI (✅ DONE)
+════════════════════════════════════════════════════════════════════════════════
+
+  ✅ Backend (.NET Core — ASP.NET Web API)
+  ─────────────────────────────────────────
+  - Migrasi dari MySQL (Pomelo) ke SQL Server BERHASIL SELESAI.
+  - Package "Pomelo.EntityFrameworkCore.MySql" sudah DIHAPUS dari backend.csproj.
+  - Package "Microsoft.EntityFrameworkCore.SqlServer" versi 8.0.10 sudah 
+    ter-install dan aktif.
+  - Error "CS0103: The name 'ServerVersion' does not exist in the current 
+    context" di file Program.cs SUDAH DIPERBAIKI.
+    → Baris "ServerVersion.AutoDetect()" (sintaks khusus Pomelo MySQL) sudah 
+      dihapus.
+    → Konfigurasi AddDbContext sudah diubah ke: options.UseSqlServer(...)
+  - "dotnet build"  → ✅ BUILD SUCCEEDED (0 errors, 0 warnings)
+  - "dotnet run"    → ✅ RUNNING (backend berjalan normal, listening on port)
+
+  ✅ Database Configuration (SQL Server Compatibility)
+  ─────────────────────────────────────────
+  - Menambahkan .UseCompatibilityLevel(120) pada konfigurasi SQL Server 
+    di Program.cs (baris AddDbContext).
+  - Level 120 = SQL Server 2014 compatibility mode.
+  - ALASAN: Mencegah error fungsi OPENJSON yang tidak tersedia di SQL Server
+    versi lama / SQL Express. Error ini muncul saat dropdown battery dipilih
+    dan EF Core men-generate query dengan .Contains() yang menggunakan OPENJSON.
+  - Dengan level 120, EF Core akan menggunakan pendekatan query lama (tanpa
+    OPENJSON) yang kompatibel dengan semua versi SQL Server.
+
+  ✅ Database Schema (Migration)
+  ─────────────────────────────────────────
+  - Folder Migrations/ lama (bekas MySQL) sudah DIHAPUS.
+  - Migration "InitialCreate" sudah di-generate ulang untuk SQL Server.
+  - Migration "AddSourceItemNumToBatteryType" → ✅ SUKSES
+    → Kolom baru "SourceItemNum" (varchar, nullable) ditambahkan ke tabel 
+      cos_battery_types untuk tracking data source dari tlkp_item.
+    → Kolom baru "KatId" (int, nullable) ditambahkan ke tabel cos_battery_types
+      untuk menyimpan kategori asal dari tlkp_item.
+  - "dotnet ef database update" → ✅ SUKSES
+  - Database "db_master_data" sudah TERBENTUK di server ADAM123\SQLEXPRESS.
+  - Semua tabel sudah ter-create sesuai schema dari DbContext (EF Core).
+  - Form Baru Dibuat: Form-B1-KM.018 (ID Generated via Script)
+    → Judul: "BATTERY ELEMENT AMB ASSY./ PROD. II"
+    → Mesin: "Mesin COS (Cast On Strap)"
+  - Check Items (Mapping Parameter):
+    → Sudah dibuat 12 parameter pengecekan sesuai PDF (Temp Pot, Temp Pipe L/R, Temp Mould, dll).
+    → Tipe input: 'numeric' (langsung input angka).
+  - Standar Nilai (Battery ID 336):
+    → Sudah di-input range Min/Max khusus untuk tipe "80D26L0 - MF00 (TJGS)".
+    → Contoh: Temp Pot (460-480), Temp Pipe (425-445).
+  - Signature Slots:
+    → Operator (Dibuat), Leader (Diperiksa), Kasubsie (Diketahui), Kasie (Disetujui).
+
+  ✅ Feature Baru: Battery Type Sync Service (Background Job)
+  ─────────────────────────────────────────
+  - File BARU dibuat: backend/Services/BatteryTypeSyncService.cs
+  - Tipe: BackgroundService (hosted service, berjalan otomatis di background).
+  - Fungsi: Sinkronisasi data baterai dari tabel legacy "tlkp_item" ke tabel 
+    aplikasi "cos_battery_types".
+  
+  - LOGIC PARSING & FILTERING:
+    Format item_num: "W-AEUC-GTZ8V00-HO-VR00" (dipisah strip '-')
+    
+    1. Safety Check:
+       ├─ Minimal 5 segment (jika < 5 → SKIP). Mencegah IndexOutOfRange saat akses Index 3 & 4.
+    
+    2. Filter Posisi Ketat (Index 1):
+       ├─ Karakter pertama ([0]) HARUS 'A'
+       ├─ Karakter ketiga ([2]) HARUS 'U'
+       ├─ Contoh Valid: "AAUC", "AAUB"
+       ├─ Contoh Invalid: "1AUA", "AACA", "UCMA"
+    
+    3. Naming Convention Baru (Index 2 + 3 + 4):
+       ├─ Format: "{BaseName} - {Suffix} ({Variant})"
+       ├─ Contoh Input: "W-AAUC-40B19L0-HPM-MF00"
+       ├─ Index 2 (Base): "40B19L0"
+       ├─ Index 3 (Variant): "HPM"
+       ├─ Index 4 (Suffix): "MF00"
+       └─ Output Name: "40B19L0 - MF00 (HPM)"
+    
+
+  - UPSERT LOGIC (Anti-Duplikasi):
+    ├─ Lookup menggunakan HashSet<string> (case-insensitive)
+    ├─ Data lama di cos_battery_types SUDAH DI-TRUNCATE dan di-sync ulang dengan format baru.
+    └─ Logging Math sudah diperbaiki (tidak ada angka minus).
+    ├─ Lookup menggunakan HashSet<string> (case-insensitive, O(1) lookup)
+    ├─ Jika Name BELUM ADA di cos_battery_types → INSERT
+    ├─ Jika Name SUDAH ADA → SKIP
+    └─ Error handling per-item (try-catch di dalam loop, tidak menghentikan 
+       proses jika ada format string yang aneh)
+
+  - Model BARU dibuat: backend/Models/TlkpItem.cs
+    → Entity untuk tabel legacy "tlkp_item" dengan Composite PK (item_num + kat_id)
+    → Didaftarkan di FormCosDbContext sebagai DbSet<TlkpItem>
+
+  ✅ Service Registration
+  ─────────────────────────────────────────
+  - BatteryTypeSyncService sudah didaftarkan di Program.cs menggunakan:
+    builder.Services.AddHostedService<BatteryTypeSyncService>();
+  - Service berjalan otomatis saat backend startup.
+
+  ✅ Frontend (Vue 3 + Vite + TypeScript + DevExtreme)
+  ─────────────────────────────────────────
+  - "npm install" → ✅ SELESAI
+  - Folder node_modules/ sudah ada dan lengkap.
+  - Belum dijalankan (npm run dev belum dieksekusi).
+
+  ✅ Konfigurasi
+  ─────────────────────────────────────────
+  - File appsettings.json sudah diupdate dengan connection string SQL Server.
+  - File appsettings.Development.json sudah dicek.
+  - CORS sudah dikonfigurasi di Program.cs untuk port 5173, 5174, 5175, 3000.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 2. PENDING TASKS (⚠️ TODO BESOK)
+════════════════════════════════════════════════════════════════════════════════
+
+  ⚠️  [PRIORITAS 1] Testing Background Service (PENTING!)
+  ─────────────────────────────────────────
+  - ISU SAAT INI: Saat user memilih Battery ID 336 (Data baru) di dropdown, UI Form TIDAK BERUBAH / Tidak me-render form baru.
+  - PENYEBAB (Dugaan): 
+    1. Frontend belum memiliki logic untuk mendeteksi perubahan `form_id` dari API.
+    2. Component Vue mungkin hardcode ke form lama atau cache data.
+  - ACTION PLAN:
+    1. Cek file Vue (kemungkinan `FormInput.vue`).
+    2. Debug event `onChange` pada dropdown battery.
+    3. Pastikan API `/api/batteries/{id}` mengembalikan `form_id` yang benar.
+    4. Pastikan frontend me-refresh list `check_items` saat battery berubah.
+
+  ⚠️  [PRIORITAS 2] Frontend Run
+  ─────────────────────────────────────────
+  - Jalankan frontend dengan "npm run dev" di folder frontend/.
+  - Pastikan Vite dev server berjalan (biasanya di http://localhost:5173).
+  - Cek browser: apakah halaman Vue bisa terbuka tanpa error.
+  - Cek console browser (F12 → Console): pastikan tidak ada error CORS 
+    atau network error saat memanggil API backend.
+
+  ⚠️  [PRIORITAS 3] Integration Test (Frontend ↔ Backend)
+  ─────────────────────────────────────────
+  - Buka aplikasi di browser, navigasi ke halaman yang menampilkan data.
+  - Pastikan data dari database SQL Server berhasil ditampilkan di frontend.
+  - Cek Network tab (F12 → Network): pastikan request ke API backend 
+    mendapat response 200 OK, bukan 404 atau 500.
+  - Khusus dropdown battery type: pastikan data yang muncul sudah 
+    sesuai dengan hasil sync dari tlkp_item.
+
+  ⚠️  [PRIORITAS 4] Cek Konfigurasi Proxy Vite (Jika Ada Masalah Koneksi)
+  ─────────────────────────────────────────
+  - Jika frontend tidak bisa connect ke backend, periksa file:
+    → frontend/vite.config.ts  (cek apakah ada proxy configuration)
+  - Pastikan proxy mengarah ke port yang benar sesuai output "dotnet run".
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 3. TECHNICAL NOTES (⚙️ PENTING — JANGAN DIHAPUS)
+════════════════════════════════════════════════════════════════════════════════
+
+  📦 Database Credentials
+  ─────────────────────────────────────────
+  Server   : ADAM123\SQLEXPRESS
+  Database : db_master_data
+  User     : sa
+  Password : 07Mei2005
+  Provider : Microsoft.EntityFrameworkCore.SqlServer 8.0.10
+
+  Connection String (sudah ada di appsettings.json):
+  "Server=ADAM123\\SQLEXPRESS;Database=db_master_data;User Id=sa;Password=07Mei2005;TrustServerCertificate=True;Encrypt=False;"
+
+  ⚙️  SQL Server Compatibility Level
+  ─────────────────────────────────────────
+  - UseCompatibilityLevel(120) aktif di Program.cs
+  - Level 120 = SQL Server 2014 mode
+  - Efek: EF Core TIDAK akan generate query OPENJSON
+  - JANGAN ubah ke level yang lebih tinggi kecuali SQL Server di-upgrade
+
+  🔄 Background Service: BatteryTypeSyncService
+  ─────────────────────────────────────────
+  - File: backend/Services/BatteryTypeSyncService.cs
+  - Behavior: 
+    → Berjalan otomatis 1x saat Startup (langsung sync)
+    → Kemudian looping setiap 30 menit (Task.Delay 30 min)
+  - Dependency: IServiceScopeFactory (untuk membuat scope DbContext 
+    di dalam Singleton BackgroundService)
+  - Error Handling: try-catch per-item di dalam loop. Jika satu item 
+    gagal di-parse, item lainnya tetap diproses.
+  - Logging: Output ke ILogger — terlihat di terminal saat dotnet run
+
+  🚀 Quick Start Commands (PowerShell / VS Code Terminal)
+  ─────────────────────────────────────────
+
+  Terminal #1 — Backend:
+    cd backend
+    dotnet run
+
+  Terminal #2 — Frontend:
+    cd frontend
+    npm run dev
+
+  🔧 Useful Commands (Jika Dibutuhkan)
+  ─────────────────────────────────────────
+  Build backend         : cd backend && dotnet build
+  Restore packages      : cd backend && dotnet restore
+  Add new migration     : cd backend && dotnet ef migrations add <NamaMigration>
+  Update database       : cd backend && dotnet ef database update
+  Install frontend deps : cd frontend && npm install
+
+  📁 File-File Penting
+  ─────────────────────────────────────────
+  Backend Entry Point   : backend/Program.cs
+  DB Context            : backend/Data/FormCosDbContext.cs
+  Backend Config        : backend/appsettings.json
+  Sync Service          : backend/Services/BatteryTypeSyncService.cs
+  Legacy Entity         : backend/Models/TlkpItem.cs
+  Battery Entity        : backend/Models/BatteryType.cs
+  Frontend Entry        : frontend/index.html
+  Frontend API Layer    : frontend/src/api/cos-api.ts
+  Vite Config           : frontend/vite.config.ts
+  SQL Schema Reference  : cos-tables-sqlserver.sql
+  DB Schema Diagram     : schema-dbdiagram.dbml
+  Migration Guide       : PANDUAN-MIGRASI-SQL-SERVER.md
+
+  ⚠️  Catatan Khusus
+  ─────────────────────────────────────────
+  - JANGAN jalankan build-and-run.sh — itu untuk Linux/Mac.
+  - Program.cs memiliki auto-migrate on startup (db.Database.Migrate()),
+    jadi setiap kali backend dijalankan, migration otomatis di-apply.
+  - CORS sudah dikonfigurasi untuk localhost:5173 (default Vite).
+  - Fallback route ke index.html sudah ada (SPA support).
+  - BatteryTypeSyncService akan sync otomatis saat startup — jika 
+    tabel tlkp_item belum ada atau kosong, service akan log warning 
+    dan tidak crash.
+  - Arsitektur keputusan: Menggunakan OPSI B (Synchronization/Data Mapping)
+    bukan Direct Access ke legacy table. Alasannya:
+    → Zero breaking changes pada FK cos_battery_standards
+    → Parsing logic terisolasi di sync service
+    → Performance dropdown tetap optimal (query integer PK)
+
+  📊 Migration History
+  ─────────────────────────────────────────
+  1. InitialCreate                      → ✅ Applied (schema awal SQL Server)
+  2. AddSourceItemNumToBatteryType       → ✅ Applied (kolom SourceItemNum + KatId)
+
+================================================================================
+  END OF PROGRESS LOG
+================================================================================
