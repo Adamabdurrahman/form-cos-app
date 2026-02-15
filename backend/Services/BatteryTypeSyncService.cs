@@ -151,7 +151,8 @@ public class BatteryTypeSyncService : BackgroundService
                     {
                         Name = batteryName,
                         SourceItemNum = item.ItemNum,
-                        KatId = item.KatId
+                        KatId = item.KatId,
+                        FormId = 1 // Default: COS_VALIDATION form
                     };
 
                     db.CosBatteryTypes.Add(newType);

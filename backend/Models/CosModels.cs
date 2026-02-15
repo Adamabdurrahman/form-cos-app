@@ -156,7 +156,14 @@ public class CosBatteryType
     [Column("kat_id")]
     public int? KatId { get; set; }
 
+    /// <summary>FK to cos_form_definitions — determines which form this battery type uses</summary>
+    [Column("form_id")]
+    public int? FormId { get; set; }
+
     // Navigation
+    [ForeignKey(nameof(FormId)), JsonIgnore]
+    public CosFormDefinition? Form { get; set; }
+
     public ICollection<CosBatteryStandard> Standards { get; set; } = new List<CosBatteryStandard>();
 }
 

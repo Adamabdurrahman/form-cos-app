@@ -254,3 +254,4 @@ C:\Users\isyaa\OneDrive\Documents\CheckSheet\form-main\backend\obj\Debug\net8.0\
 C:\Users\isyaa\OneDrive\Documents\CheckSheet\form-main\backend\obj\Debug\net8.0\backend.pdb
 C:\Users\isyaa\OneDrive\Documents\CheckSheet\form-main\backend\obj\Debug\net8.0\backend.genruntimeconfig.cache
 C:\Users\isyaa\OneDrive\Documents\CheckSheet\form-main\backend\obj\Debug\net8.0\ref\backend.dll
+C:\Users\isyaa\OneDrive\Documents\CheckSheet\form-main\backend\obj\Debug\net8.0\backend.sourcelink.json

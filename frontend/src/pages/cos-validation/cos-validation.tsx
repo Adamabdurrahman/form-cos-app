@@ -12,6 +12,7 @@ import {
     getMolds,
     getHierarchy,
     getFormDefinitionByCode,
+    getFormDefinitionById,
     submitFormSubmission,
     type OperatorDto,
     type BatteryTypeDto,
@@ -162,6 +163,49 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
             return updated;
         });
     }, []);
+
+    // ===== FORM SWITCH ON BATTERY CHANGE =====
+    const handleBatteryTypeChange = useCallback(async (slotIdx: number, batteryName: string | null) => {
+        // 1. Always update the slot first
+        updateSlot(slotIdx, 'type', batteryName);
+
+        if (!batteryName) return;
+
+        // 2. Find the selected battery's data to check its formId
+        const selectedBattery = batteryTypes.find(t => t.name === batteryName);
+        if (!selectedBattery?.formId || selectedBattery.formId === formDef?.id) {
+            // Same form or no form link → nothing to do
+            return;
+        }
+
+        // 3. Different form needed → fetch and switch
+        try {
+            const newFormDef = await getFormDefinitionById(selectedBattery.formId);
+            setFormDef(newFormDef);
+
+            // Reset battery slots: keep current selection, clear others
+            setBatterySlots(() => {
+                const newSlots: BatterySlot[] = Array.from({ length: newFormDef.slotCount }, () => ({ type: null, mold: null }));
+                newSlots[Math.min(slotIdx, newFormDef.slotCount - 1)] = { type: batteryName, mold: null };
+                return newSlots;
+            });
+
+            // Reset all input state for the new form
+            setSettings({});
+
+            const emptyRow: ProblemRow = { id: Date.now() };
+            newFormDef.problemColumns.forEach(col => {
+                emptyRow[col.columnKey] = col.fieldType === 'number' ? null : '';
+            });
+            setProblems([emptyRow]);
+
+            const sigs: Record<string, string | null> = {};
+            newFormDef.signatureSlots.forEach(slot => { sigs[slot.roleKey] = null; });
+            setSignatures(sigs);
+        } catch (err) {
+            console.error('Failed to load new form definition:', err);
+        }
+    }, [batteryTypes, formDef, updateSlot]);
 
     const updateSetting = useCallback((key: string, value: unknown) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -430,7 +474,7 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                         <div className="approval-box" key={slot.roleKey}>
                                             <SignaturePad
                                                 label={slot.label}
-                                                name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey}                                                empId={getEmpIdForRole(slot.roleKey)}                                                onChange={(d) => updateSignature(slot.roleKey, d)}
+                                                name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey} empId={getEmpIdForRole(slot.roleKey)} onChange={(d) => updateSignature(slot.roleKey, d)}
                                             />
                                         </div>
                                     ))}
@@ -538,7 +582,7 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                                     <SelectBox
                                                         items={batteryTypes.map(t => t.name)}
                                                         value={batterySlots[slotIdx]?.type ?? null}
-                                                        onValueChanged={(e) => updateSlot(slotIdx, 'type', e.value)}
+                                                        onValueChanged={(e) => handleBatteryTypeChange(slotIdx, e.value)}
                                                         placeholder={`Type ${slotIdx + 1}`}
                                                         stylingMode="underlined"
                                                         height={26}

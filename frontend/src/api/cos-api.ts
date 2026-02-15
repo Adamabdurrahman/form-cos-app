@@ -55,6 +55,7 @@ export interface BatteryStandardDto {
 export interface BatteryTypeDto {
   id: number;
   name: string;
+  formId?: number | null;
   standards: BatteryStandardDto[];
 }
 

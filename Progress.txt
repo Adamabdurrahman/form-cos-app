@@ -1,6 +1,6 @@
 ================================================================================
   PROJECT PROGRESS LOG — Form COS (CheckSheet)
-  Last Updated : [hari ini, akhir sesi coding — Sesi 2]
+  Last Updated : 2026-02-15 (Sesi 3 — FormId Implementation)
   Author       : Technical Lead (onboarding session)
 ================================================================================
 
@@ -21,6 +21,12 @@
     → Konfigurasi AddDbContext sudah diubah ke: options.UseSqlServer(...)
   - "dotnet build"  → ✅ BUILD SUCCEEDED (0 errors, 0 warnings)
   - "dotnet run"    → ✅ RUNNING (backend berjalan normal, listening on port)
+  - [SESI 3] Modifikasi Model CosBatteryType (backend/Models/CosModels.cs):
+    → Ditambahkan properti: public int? FormId { get; set; }
+    → Ditambahkan FK navigation: [ForeignKey(nameof(FormId))] CosFormDefinition? Form
+    → API Endpoint GET /api/battery/types sekarang mengembalikan field "formId" di JSON.
+  - [SESI 3] Update BatteryTypeSyncService.cs:
+    → Battery baru yang di-sync otomatis mendapat FormId = 1 (default COS_VALIDATION).
 
   ✅ Database Configuration (SQL Server Compatibility)
   ─────────────────────────────────────────
@@ -56,6 +62,14 @@
     → Contoh: Temp Pot (460-480), Temp Pipe (425-445).
   - Signature Slots:
     → Operator (Dibuat), Leader (Diperiksa), Kasubsie (Diketahui), Kasie (Disetujui).
+  - [SESI 3] Migration "AddFormIdFkToBatteryType" → ✅ SUKSES
+    → Kolom baru "FormId" (int, nullable, FK → cos_form_definitions.id)
+      ditambahkan ke tabel cos_battery_types.
+    → Fungsi: Menghubungkan setiap battery type ke form definition yang sesuai.
+  - [SESI 3] Data Patching (SQL Manual) → ✅ SUKSES
+    → 329 battery types (tanpa form_id) di-set ke FormId = 1 (COS_VALIDATION).
+    → Battery ID 336 ("80D26L0 - MF00 (TJGS)") → FormId = 2 (FORM_COS_MF).
+    → Query: UPDATE cos_battery_types SET form_id = 1 WHERE form_id IS NULL;
 
   ✅ Feature Baru: Battery Type Sync Service (Background Job)
   ─────────────────────────────────────────
@@ -105,34 +119,55 @@
     builder.Services.AddHostedService<BatteryTypeSyncService>();
   - Service berjalan otomatis saat backend startup.
 
-  ✅ Frontend (Vue 3 + Vite + TypeScript + DevExtreme)
+  ✅ Frontend (React TSX + Vite + TypeScript + DevExtreme)
   ─────────────────────────────────────────
   - "npm install" → ✅ SELESAI
   - Folder node_modules/ sudah ada dan lengkap.
-  - Belum dijalankan (npm run dev belum dieksekusi).
+  - "npm run dev" → ✅ BERHASIL (Vite dev server di http://localhost:5173)
+  - [SESI 3] ✅ SOLVED PRIORITY 1 — Form Rendering Dinamis Berdasarkan Battery:
+    → Refactor file cos-validation.tsx:
+      ├─ Import getFormDefinitionById dari cos-api.ts.
+      ├─ Fungsi baru: handleBatteryTypeChange(slotIdx, batteryName)
+      │   → Mendeteksi apakah battery yang dipilih punya formId berbeda.
+      │   → Jika berbeda: fetch FormDefinition baru via GET /api/formdefinition/{id}.
+      │   → Reset state: formDef, batterySlots, settings, problems, signatures.
+      ├─ SelectBox dropdown battery sekarang memanggil handleBatteryTypeChange
+      │   (bukan lagi updateSlot langsung).
+      └─ BatteryTypeDto di cos-api.ts ditambahkan property: formId?: number | null.
+    → Hasil Verifikasi (tested):
+      ├─ Pilih "80D26L0 - MF00 (TJGS)" → Form berubah ke "BATTERY ELEMENT AMB ASSY./ PROD. II" ✅
+      ├─ 12 check items baru muncul (Temp Pot, Temp Pipe, dll) ✅
+      ├─ Standar min/max tampil benar (460-480, 425-445, dll) ✅
+      └─ Switch kembali ke battery lain → Form kembali ke "VALIDASI PROSES COS" ✅
 
   ✅ Konfigurasi
   ─────────────────────────────────────────
   - File appsettings.json sudah diupdate dengan connection string SQL Server.
   - File appsettings.Development.json sudah dicek.
   - CORS sudah dikonfigurasi di Program.cs untuk port 5173, 5174, 5175, 3000.
+  - [SESI 3] Fix Vite Proxy: Target diubah dari port 5000 → 5131 di vite.config.ts.
+    → Port 5131 sesuai dengan output "dotnet run" (dari launchSettings.json).
+    → Tanpa fix ini, semua API call dari frontend akan gagal (connection refused).
 
 
 ════════════════════════════════════════════════════════════════════════════════
  2. PENDING TASKS (⚠️ TODO BESOK)
 ════════════════════════════════════════════════════════════════════════════════
 
-  ⚠️  [PRIORITAS 1] Testing Background Service (PENTING!)
+  ✅  [PRIORITAS 1] SOLVED — Form Rendering Dinamis (Sesi 3, 2026-02-15)
   ─────────────────────────────────────────
-  - ISU SAAT INI: Saat user memilih Battery ID 336 (Data baru) di dropdown, UI Form TIDAK BERUBAH / Tidak me-render form baru.
-  - PENYEBAB (Dugaan): 
-    1. Frontend belum memiliki logic untuk mendeteksi perubahan `form_id` dari API.
-    2. Component Vue mungkin hardcode ke form lama atau cache data.
-  - ACTION PLAN:
-    1. Cek file Vue (kemungkinan `FormInput.vue`).
-    2. Debug event `onChange` pada dropdown battery.
-    3. Pastikan API `/api/batteries/{id}` mengembalikan `form_id` yang benar.
-    4. Pastikan frontend me-refresh list `check_items` saat battery berubah.
+  - ISU LAMA: Saat user memilih Battery ID 336 (Data baru) di dropdown, UI Form TIDAK BERUBAH / Tidak me-render form baru.
+  - ROOT CAUSE DITEMUKAN (3 gap arsitektur):
+    1. Database: cos_battery_types TIDAK PUNYA kolom form_id → tidak ada link battery↔form.
+    2. Frontend: formDef di-load 1x saat mount dengan hardcode formCode='COS_VALIDATION',
+       tidak pernah di-fetch ulang saat battery berubah.
+    3. Frontend: updateSlot() hanya mengubah nama battery di state, tidak mendeteksi
+       bahwa battery baru butuh form yang berbeda.
+  - SOLUSI DITERAPKAN:
+    1. Tambah kolom FormId (FK, nullable) ke cos_battery_types + migration.
+    2. Data patch: Battery 336 → FormId=2, sisanya → FormId=1.
+    3. Frontend: handleBatteryTypeChange() mendeteksi formId berbeda → fetch form baru → reset state.
+  - STATUS: ✅ VERIFIED & WORKING.
 
   ⚠️  [PRIORITAS 2] Frontend Run
   ─────────────────────────────────────────
@@ -191,6 +226,21 @@
   - Error Handling: try-catch per-item di dalam loop. Jika satu item 
     gagal di-parse, item lainnya tetap diproses.
   - Logging: Output ke ILogger — terlihat di terminal saat dotnet run
+  - [SESI 3] Update: Battery baru yang di-sync sekarang mendapat FormId = 1 (default).
+
+  🔗 Form Linking Strategy (BARU — Sesi 3)
+  ─────────────────────────────────────────
+  - Mapping Form TIDAK LAGI hardcode di frontend.
+  - Flow: BatteryType → punya FormId → load FormDefinition + CheckItems dari API.
+  - Tabel Mapping Saat Ini:
+    ├─ FormId = 1 → Code: COS_VALIDATION → "VALIDASI PROSES COS" (form lama, default)
+    ├─ FormId = 2 → Code: FORM_COS_MF   → "BATTERY ELEMENT AMB ASSY./ PROD. II" (form baru)
+    └─ FormId = NULL → Akan di-treat sebagai form lama (backward compatible).
+  - PENTING: Jika ada Battery Type BARU yang butuh form khusus, WAJIB:
+    1. Buat FormDefinition baru (via Admin Panel atau SQL INSERT).
+    2. UPDATE cos_battery_types SET form_id = <ID_BARU> WHERE id = <BATTERY_ID>.
+  - Sync Service (BatteryTypeSyncService) otomatis set FormId = 1 untuk battery baru.
+    Jika battery baru butuh form khusus, harus di-patch manual setelah sync.
 
   🚀 Quick Start Commands (PowerShell / VS Code Terminal)
   ─────────────────────────────────────────
@@ -246,6 +296,7 @@
   ─────────────────────────────────────────
   1. InitialCreate                      → ✅ Applied (schema awal SQL Server)
   2. AddSourceItemNumToBatteryType       → ✅ Applied (kolom SourceItemNum + KatId)
+  3. AddFormIdFkToBatteryType            → ✅ Applied (kolom FormId FK → cos_form_definitions)
 
 ================================================================================
   END OF PROGRESS LOG
