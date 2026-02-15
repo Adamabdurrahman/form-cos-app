@@ -4,7 +4,7 @@ import './themes/generated/theme.base.css';
 import './themes/generated/theme.additional.dark.css';
 import './themes/generated/theme.additional.css';
 import './dx-styles.scss';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { useScreenSizeClass } from './utils/media-query';
 import { ThemeContext, useThemeContext } from './theme';
 import { CosValidation } from './pages/cos-validation/cos-validation';
@@ -18,37 +18,40 @@ import { SubmissionResponse } from './pages/admin/submission-response';
 import { PersonnelPage } from './pages/admin/personnel';
 import { BatteryTypesPage } from './pages/admin/battery-types';
 
-export default function Root() {
+function CosPage() {
   const screenSizeClass = useScreenSizeClass();
+  return (
+    <div className={`app ${screenSizeClass}`}>
+      <CosValidation />
+    </div>
+  );
+}
+
+const router = createBrowserRouter([
+  {
+    path: '/admin',
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <AdminDashboard /> },
+      { path: 'forms', element: <FormList /> },
+      { path: 'forms/:id', element: <FormEditor /> },
+      { path: 'submissions', element: <SubmissionList /> },
+      { path: 'submissions/:id', element: <SubmissionDetail /> },
+      { path: 'submissions/:id/view', element: <SubmissionResponse /> },
+      { path: 'personnel', element: <PersonnelPage /> },
+      { path: 'battery-types', element: <BatteryTypesPage /> },
+    ],
+  },
+  { path: '/', element: <CosPage /> },
+  { path: '*', element: <Navigate to="/" replace /> },
+]);
+
+export default function Root() {
   const themeContext = useThemeContext();
 
   return (
     <ThemeContext.Provider value={themeContext}>
-      <BrowserRouter>
-        <Routes>
-          {/* Admin routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="forms" element={<FormList />} />
-            <Route path="forms/:id" element={<FormEditor />} />
-            <Route path="submissions" element={<SubmissionList />} />
-            <Route path="submissions/:id" element={<SubmissionDetail />} />
-            <Route path="submissions/:id/view" element={<SubmissionResponse />} />
-            <Route path="personnel" element={<PersonnelPage />} />
-            <Route path="battery-types" element={<BatteryTypesPage />} />
-          </Route>
-          {/* Main app */}
-          <Route
-            path="/"
-            element={
-              <div className={`app ${screenSizeClass}`}>
-                <CosValidation />
-              </div>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <RouterProvider router={router} />
     </ThemeContext.Provider>
   );
 }

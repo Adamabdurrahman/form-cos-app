@@ -162,6 +162,12 @@ export interface FormSubmissionListDto {
   formCode?: string;
   formTitle?: string;
   createdAt: string;
+  status?: string;
+  hasNg?: boolean;
+  operatorSignedAt?: string | null;
+  leaderSignedAt?: string | null;
+  kasubsieSignedAt?: string | null;
+  kasieSignedAt?: string | null;
 }
 
 export interface FormSubmissionDetailDto {
@@ -180,10 +186,19 @@ export interface FormSubmissionDetailDto {
   kasieName?: string;
   batterySlotsJson?: string;
   createdAt: string;
+  status?: string;
+  hasNg?: boolean;
+  operatorSignedAt?: string | null;
+  leaderSignedAt?: string | null;
+  kasubsieSignedAt?: string | null;
+  kasieSignedAt?: string | null;
+  leaderMemo?: string | null;
+  kasubsieMemo?: string | null;
+  kasieMemo?: string | null;
   form?: { id: number; code: string; title: string; subtitle: string };
   checkValues: { id: number; settingKey: string; value: string }[];
   problems: { id: number; sortOrder: number; valuesJson: string }[];
-  signatures: { id: number; roleKey: string; signatureData: string }[];
+  signatures: { id: number; roleKey: string; signatureData: string; signedAt?: string | null }[];
 }
 
 // ── Admin types ──
@@ -198,15 +213,17 @@ export interface AdminBatteryTypeDto {
 // ══════════════════════════════════════════════════
 
 // ── Personnel (read-only, from master data) ──
-export const getOperators = () => apiFetch<OperatorDto[]>('/personnel/operators');
+export const getOperators = (lineId?: number | null) =>
+  apiFetch<OperatorDto[]>(lineId ? `/personnel/operators?lineId=${lineId}` : '/personnel/operators');
 export const getLeaders = () => apiFetch<LeaderDto[]>('/personnel/leaders');
 export const getKasubsies = () => apiFetch<KasubsieDto[]>('/personnel/kasubsies');
 export const getKasies = () => apiFetch<KasieDto[]>('/personnel/kasies');
 export const getHierarchy = (empId: string) =>
   apiFetch<HierarchyDto>(`/personnel/hierarchy/${encodeURIComponent(empId)}`);
 
-// ── Battery / Line / Shift / Mold ──
-export const getBatteryTypes = () => apiFetch<BatteryTypeDto[]>('/battery/types');
+// ── Battery / Line / Shift / Mold / Group ──
+export const getBatteryTypes = (lineId?: number | null) =>
+  apiFetch<BatteryTypeDto[]>(lineId ? `/battery/types?lineId=${lineId}` : '/battery/types');
 export const getLines = () => apiFetch<LineDto[]>('/battery/lines');
 export const getShifts = () => apiFetch<ShiftDto[]>('/battery/shifts');
 export const getMolds = () => apiFetch<MoldDto[]>('/battery/molds');
@@ -236,6 +253,8 @@ export const updateFormSubmission = (id: number, data: FormSubmissionPayload) =>
   apiFetch<{ id: number }>(`/formsubmission/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteFormSubmission = (id: number) =>
   apiFetch<void>(`/formsubmission/${id}`, { method: 'DELETE' });
+export const approveSubmission = (id: number, data: { role: string; signatureData: string | null; memo?: string | null }) =>
+  apiFetch<{ id: number; status: string }>(`/formsubmission/${id}/approve`, { method: 'PUT', body: JSON.stringify(data) });
 
 // ── Admin: Check Items ──
 export const adminGetCheckItems = (formId: number) =>

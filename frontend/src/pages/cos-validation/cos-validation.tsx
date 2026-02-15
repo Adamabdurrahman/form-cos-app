@@ -1,9 +1,12 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useBlocker } from 'react-router-dom';
 import DateBox from 'devextreme-react/date-box';
 import SelectBox from 'devextreme-react/select-box';
 import NumberBox from 'devextreme-react/number-box';
 import TextBox from 'devextreme-react/text-box';
 import Button from 'devextreme-react/button';
+import { custom as dxCustomDialog } from 'devextreme/ui/dialog';
+import dxNotify from 'devextreme/ui/notify';
 import {
     getOperators,
     getBatteryTypes,
@@ -53,6 +56,7 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     const [lineList, setLineList] = useState<LineDto[]>([]);
     const [shiftList, setShiftList] = useState<ShiftDto[]>([]);
     const [batteryTypes, setBatteryTypes] = useState<BatteryTypeDto[]>([]);
+    const [allBatteryTypes, setAllBatteryTypes] = useState<BatteryTypeDto[]>([]);
     const [moldList, setMoldList] = useState<MoldDto[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -86,6 +90,11 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     const signatureSlots: FormSignatureSlotDto[] = formDef?.signatureSlots ?? [];
     const slotCount = formDef?.slotCount ?? 3;
 
+    // ===== FORM PROTECTION (prevent data loss) =====
+    const STORAGE_KEY = `cos_form_draft_${formCode}`;
+    const [formTouched, setFormTouched] = useState(false);
+    const initialLoadDone = useRef(false);
+
     // ===== LOAD DATA =====
     useEffect(() => {
         async function loadData() {
@@ -102,6 +111,7 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                 setLineList(lines);
                 setShiftList(shifts);
                 setBatteryTypes(btypes);
+                setAllBatteryTypes(btypes);
                 setMoldList(molds);
                 setFormDef(fd);
 
@@ -119,6 +129,44 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                 const sigs: Record<string, string | null> = {};
                 fd.signatureSlots.forEach(slot => { sigs[slot.roleKey] = null; });
                 setSignatures(sigs);
+
+                // ---- Restore draft from sessionStorage ----
+                try {
+                    const draftJson = sessionStorage.getItem(`cos_form_draft_${formCode}`);
+                    if (draftJson) {
+                        const d = JSON.parse(draftJson);
+                        if (d.tanggal) setTanggal(new Date(d.tanggal));
+                        if (d.lineId != null) {
+                            setLineId(d.lineId);
+                            // Reload battery types for this line
+                            getBatteryTypes(d.lineId).then(setBatteryTypes).catch(() => { });
+                        }
+                        if (d.shiftId != null) setShiftId(d.shiftId);
+                        if (d.lineId != null) {
+                            getOperators(d.lineId).then(setOperatorList).catch(() => { });
+                        }
+                        if (d.operatorEmpId) {
+                            setOperatorEmpId(d.operatorEmpId);
+                            getHierarchy(d.operatorEmpId).then(h => {
+                                setHierarchyIds({
+                                    leaderEmpId: h.leaderEmpId,
+                                    kasubsieEmpId: h.kasubsieEmpId,
+                                    kasieEmpId: h.kasieEmpId,
+                                });
+                                setHierarchyNames({
+                                    operator: h.operatorName ?? '',
+                                    leader: h.leaderName ?? '',
+                                    kasubsie: h.kasubsieName ?? '',
+                                    kasie: h.kasieName ?? '',
+                                });
+                            }).catch(() => { });
+                        }
+                        if (d.batterySlots?.length) setBatterySlots(d.batterySlots);
+                        if (d.settings && Object.keys(d.settings).length) setSettings(d.settings);
+                        if (d.problems?.length) setProblems(d.problems);
+                        if (d.signatures) setSignatures(prev => ({ ...prev, ...d.signatures }));
+                    }
+                } catch { /* ignore corrupt data */ }
             } catch (err) {
                 console.error('Failed to load data:', err);
             } finally {
@@ -128,7 +176,74 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
         loadData();
     }, [formCode]);
 
-    // ===== HANDLERS =====
+    // Mark initial load as done (delay to let restored state settle)
+    useEffect(() => {
+        if (!loading && formDef) {
+            const t = setTimeout(() => { initialLoadDone.current = true; }, 600);
+            return () => clearTimeout(t);
+        }
+    }, [loading, formDef]);
+
+    // Track dirty state — any form field change after initial load
+    useEffect(() => {
+        if (initialLoadDone.current) setFormTouched(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tanggal, lineId, shiftId, operatorEmpId, batterySlots, settings, problems, signatures]);
+
+    // 1️⃣ Warn on browser refresh / close tab (beforeunload)
+    useEffect(() => {
+        if (!formTouched) return;
+        const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [formTouched]);
+
+    // 2️⃣ Block in-app navigation (react-router)
+    const blocker = useBlocker(formTouched);
+    useEffect(() => {
+        if (blocker.state === 'blocked') {
+            const leave = window.confirm('Data form belum disimpan. Yakin ingin pindah halaman?');
+            if (leave) blocker.proceed();
+            else blocker.reset();
+        }
+    }, [blocker]);
+
+    // 3️⃣ Auto-save to sessionStorage (debounced 400ms)
+    useEffect(() => {
+        if (!initialLoadDone.current || !formDef) return;
+        const t = setTimeout(() => {
+            const draft = {
+                tanggal: tanggal.toISOString(),
+                lineId, shiftId, operatorEmpId,
+                batterySlots, settings, problems, signatures,
+            };
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+        }, 400);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tanggal, lineId, shiftId, operatorEmpId, batterySlots, settings, problems, signatures, formDef, STORAGE_KEY]);
+
+    // ===== HANDLERS (chain select) =====
+    const handleLineChange = useCallback((e: { value?: number | null }) => {
+        const newLineId = e.value ?? null;
+        setLineId(newLineId);
+        // Reset downstream
+        setOperatorEmpId(null);
+        setHierarchyIds({});
+        setHierarchyNames({});
+        // Clear battery slots (types change per line)
+        setBatterySlots(prev => prev.map(() => ({ type: null, mold: null })));
+        setSettings({});
+        // Reload battery types + operators for this line
+        if (newLineId) {
+            getBatteryTypes(newLineId).then(setBatteryTypes).catch(() => setBatteryTypes(allBatteryTypes));
+            getOperators(newLineId).then(setOperatorList).catch(() => { });
+        } else {
+            setBatteryTypes(allBatteryTypes);
+            getOperators().then(setOperatorList).catch(() => { });
+        }
+    }, [allBatteryTypes]);
+
     const handleOperatorChange = useCallback((e: { value?: string }) => {
         const empId = e.value ?? null;
         setOperatorEmpId(empId);
@@ -322,9 +437,9 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
         }
 
         if (item.type === 'visual') {
-            const val = (settings[key] as ('ok' | 'ng' | undefined)) ?? 'ok';
+            const val = (settings[key] as ('ok' | 'ng' | undefined)) ?? 'ng';
             if (settings[key] === undefined) {
-                updateSetting(key, 'ok');
+                updateSetting(key, 'ng');
             }
             return (
                 <div className="visual-check-pair">
@@ -408,8 +523,24 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
     // ===== SUBMIT =====
     const handleSubmit = useCallback(async () => {
         if (!formDef || !operatorEmpId) {
-            alert('Harap lengkapi data operator terlebih dahulu.');
+            dxNotify('Harap lengkapi data operator terlebih dahulu.', 'warning', 3000);
             return;
+        }
+
+        // Check for NG items
+        const hasNgItems = Object.values(settings).some(v => v === 'ng');
+
+        if (hasNgItems) {
+            const dialog = dxCustomDialog({
+                title: '⚠️ Ditemukan Item NG',
+                messageHtml: '<div style="text-align:center;font-size:14px;"><p>Terdapat item <b style="color:#dc3545;">NG (Not Good)</b> pada form ini.</p><p>Yakin ingin tetap submit?</p></div>',
+                buttons: [
+                    { text: 'Batal', onClick: () => false },
+                    { text: 'Ya, Submit', onClick: () => true, type: 'danger' as unknown as string },
+                ],
+            });
+            const confirmed = await dialog.show();
+            if (!confirmed) return;
         }
 
         const payload: FormSubmissionPayload = {
@@ -438,12 +569,50 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
 
         try {
             const result = await submitFormSubmission(payload);
-            alert(`Check Sheet berhasil disimpan! (ID: ${result.id})`);
+            sessionStorage.removeItem(STORAGE_KEY);
+            setFormTouched(false);
+
+            if (hasNgItems) {
+                // Show SCW warning notification
+                dxNotify({
+                    message: '⚠️ Lakukan SCW (Stop Call Wait)!',
+                    type: 'warning',
+                    displayTime: 6000,
+                    width: 380,
+                    position: { my: 'top center', at: 'top center', offset: '0 60' },
+                } as never);
+            }
+
+            dxNotify(`Check Sheet berhasil disimpan! (ID: ${result.id})`, 'success', 3000);
         } catch (err) {
             console.error('Submit error:', err);
-            alert('Gagal menyimpan. Lihat console untuk detail.');
+            dxNotify('Gagal menyimpan. Lihat console untuk detail.', 'error', 3000);
         }
-    }, [formDef, tanggal, lineId, shiftId, operatorEmpId, hierarchyIds, batterySlots, settings, problems, problemColumns, signatures, signatureSlots]);
+    }, [formDef, tanggal, lineId, shiftId, operatorEmpId, hierarchyIds, batterySlots, settings, problems, problemColumns, signatures, signatureSlots, STORAGE_KEY]);
+    // ===== CLEAR FORM =====
+    const handleClearForm = useCallback(() => {
+        if (!window.confirm('Yakin ingin menghapus semua data form?\nData yang belum disimpan akan hilang.')) return;
+        setTanggal(new Date());
+        setLineId(null);
+        setShiftId(null);
+        setOperatorEmpId(null);
+        setBatteryTypes(allBatteryTypes);
+        getOperators().then(setOperatorList).catch(() => { });
+        setHierarchyIds({});
+        setHierarchyNames({});
+        setBatterySlots(Array.from({ length: slotCount }, () => ({ type: null, mold: null })));
+        setSettings({});
+        const emptyRow: ProblemRow = { id: Date.now() };
+        problemColumns.forEach(col => {
+            emptyRow[col.columnKey] = col.fieldType === 'number' ? null : '';
+        });
+        setProblems([emptyRow]);
+        const sigs: Record<string, string | null> = {};
+        signatureSlots.forEach(slot => { sigs[slot.roleKey] = null; });
+        setSignatures(sigs);
+        sessionStorage.removeItem(STORAGE_KEY);
+        setFormTouched(false);
+    }, [slotCount, problemColumns, signatureSlots, allBatteryTypes, STORAGE_KEY]);
 
     // ===== MAIN RENDER =====
     if (loading || !formDef) {
@@ -472,10 +641,20 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                 <div className="approval-section">
                                     {signatureSlots.map(slot => (
                                         <div className="approval-box" key={slot.roleKey}>
-                                            <SignaturePad
-                                                label={slot.label}
-                                                name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey} empId={getEmpIdForRole(slot.roleKey)} onChange={(d) => updateSignature(slot.roleKey, d)}
-                                            />
+                                            {slot.roleKey === 'operator' ? (
+                                                <SignaturePad
+                                                    label={slot.label}
+                                                    name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey}
+                                                    empId={getEmpIdForRole(slot.roleKey)}
+                                                    onChange={(d) => updateSignature(slot.roleKey, d)}
+                                                />
+                                            ) : (
+                                                <div className="signature-display-only">
+                                                    <div className="signature-display-label">{slot.label}</div>
+                                                    <div className="signature-display-placeholder">—</div>
+                                                    <div className="signature-display-name">{hierarchyNames[slot.roleKey] || '-'}</div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -511,11 +690,12 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                                     valueExpr="id"
                                                     displayExpr="name"
                                                     value={lineId}
-                                                    onValueChanged={(e) => setLineId(e.value)}
+                                                    onValueChanged={handleLineChange}
                                                     placeholder="Line"
                                                     stylingMode="underlined"
                                                     height={30}
                                                     width={120}
+                                                    showClearButton={true}
                                                 />
                                                 <span className="separator">/</span>
                                                 <SelectBox
@@ -544,11 +724,12 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                                 onValueChanged={handleOperatorChange}
                                                 searchEnabled={true}
                                                 searchMode="contains"
-                                                placeholder="Ketik nama operator..."
+                                                placeholder={lineId ? 'Pilih operator...' : 'Pilih Line dulu...'}
                                                 stylingMode="underlined"
                                                 height={30}
                                                 width={280}
                                                 showClearButton={true}
+                                                disabled={!lineId}
                                             />
                                         </td>
                                     </tr>
@@ -692,6 +873,14 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
 
                         {/* ==================== FOOTER / SUBMIT ==================== */}
                         <div className="form-footer">
+                            <Button
+                                text="Clear Form"
+                                icon="revert"
+                                type="danger"
+                                stylingMode="outlined"
+                                height={36}
+                                onClick={handleClearForm}
+                            />
                             <Button
                                 text="Simpan Check Sheet"
                                 type="default"

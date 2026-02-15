@@ -23,32 +23,9 @@ export default function SignaturePad({ onChange, label, name, empId, initialValu
 
   const [signatureData, setSignatureData] = useState<string | null>(initialValue ?? null);
 
-  // Track whether we already loaded from DB for this empId
-  const loadedEmpIdRef = useRef<string | null>(null);
-
-  // Load signature from DB when empId changes (and no server initialValue)
-  useEffect(() => {
-    if (!empId || empId === loadedEmpIdRef.current) return;
-    loadedEmpIdRef.current = empId;
-
-    // If there's an initialValue from server (edit mode), use that instead
-    if (initialValue) {
-      setSignatureData(initialValue);
-      return;
-    }
-
-    getEmployeeSignature(empId)
-      .then(result => {
-        if (result.signatureData) {
-          setSignatureData(result.signatureData);
-          onChange?.(result.signatureData);
-        }
-      })
-      .catch(() => {
-        // silently ignore — no saved signature
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [empId]);
+  // Saved signature from DB (fetched on-demand when popup opens)
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  const [loadingSaved, setLoadingSaved] = useState(false);
 
   // Sync when initialValue prop changes from outside (edit mode loading)
   useEffect(() => {
@@ -57,21 +34,59 @@ export default function SignaturePad({ onChange, label, name, empId, initialValu
     }
   }, [initialValue]);
 
-  // Setup canvas when popup opens
+  /** Draw a dataUrl image onto the canvas so the user can edit on top */
+  const loadImageToCanvas = useCallback((dataUrl: string) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Fit image proportionally in the center
+      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = (canvas.width - w) / 2;
+      const y = (canvas.height - h) / 2;
+      ctx.drawImage(img, x, y, w, h);
+    };
+    img.src = dataUrl;
+  }, []);
+
+  // Setup canvas + fetch saved signature when popup opens
   useEffect(() => {
     if (!popupVisible) return;
     setMode('draw');
     setUploadPreview(null);
+
+    // Fetch saved signature from DB on-demand
+    if (empId) {
+      setLoadingSaved(true);
+      getEmployeeSignature(empId)
+        .then(result => {
+          setSavedSignature(result.signatureData ?? null);
+        })
+        .catch(() => setSavedSignature(null))
+        .finally(() => setLoadingSaved(false));
+    }
+
     const timer = setTimeout(() => {
-      const ctx = canvasRef.current?.getContext('2d');
-      if (!ctx) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!ctx || !canvas) return;
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.strokeStyle = '#000';
+
+      // If there's an existing signature, load it onto the canvas for editing
+      if (signatureData) {
+        loadImageToCanvas(signatureData);
+      }
     }, 50);
     return () => clearTimeout(timer);
-  }, [popupVisible]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popupVisible, empId, loadImageToCanvas]);
 
   /* ---------- drawing ---------- */
   const getPos = useCallback(
@@ -224,7 +239,14 @@ export default function SignaturePad({ onChange, label, name, empId, initialValu
             <button
               type="button"
               className={`sig-tab ${mode === 'draw' ? 'active' : ''}`}
-              onClick={() => setMode('draw')}
+              onClick={() => {
+                setMode('draw');
+                // Load existing signature onto canvas when switching to draw
+                setTimeout(() => {
+                  if (signatureData) loadImageToCanvas(signatureData);
+                  else if (uploadPreview) loadImageToCanvas(uploadPreview);
+                }, 50);
+              }}
             >
               Gambar
             </button>
@@ -270,18 +292,47 @@ export default function SignaturePad({ onChange, label, name, empId, initialValu
                 {uploadPreview ? (
                   <div className="upload-preview-wrap">
                     <img src={uploadPreview} alt="Preview" className="upload-preview-img" />
-                    <button
-                      type="button"
-                      className="upload-change-btn"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Ganti Gambar
-                    </button>
+                    <div className="upload-preview-actions">
+                      <button
+                        type="button"
+                        className="upload-change-btn"
+                        onClick={() => { setUploadPreview(null); }}
+                      >
+                        Ganti
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()}>
-                    <span className="upload-text">Klik untuk pilih gambar tanda tangan</span>
-                    <span className="upload-subtext">PNG, JPG, atau format gambar lainnya</span>
+                  <div className="upload-options">
+                    {/* Saved signature from DB */}
+                    {empId && (
+                      <div className="saved-signature-section">
+                        <div className="upload-section-label">TTD Tersimpan</div>
+                        {loadingSaved ? (
+                          <div className="saved-sig-loading">Memuat...</div>
+                        ) : savedSignature ? (
+                          <div
+                            className="saved-sig-card"
+                            onClick={() => setUploadPreview(savedSignature)}
+                            title="Klik untuk pakai tanda tangan ini"
+                          >
+                            <img src={savedSignature} alt="TTD Tersimpan" className="saved-sig-img" />
+                            <span className="saved-sig-use">Pakai</span>
+                          </div>
+                        ) : (
+                          <div className="saved-sig-empty">Belum ada TTD tersimpan</div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Upload new */}
+                    <div className="upload-new-section">
+                      <div className="upload-section-label">Upload Baru</div>
+                      <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()}>
+                        <span className="upload-text">Klik untuk pilih gambar</span>
+                        <span className="upload-subtext">PNG, JPG, atau format lainnya</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

@@ -4,6 +4,7 @@ import DateBox from 'devextreme-react/date-box';
 import SelectBox from 'devextreme-react/select-box';
 import NumberBox from 'devextreme-react/number-box';
 import TextBox from 'devextreme-react/text-box';
+import TextArea from 'devextreme-react/text-area';
 import Button from 'devextreme-react/button';
 import LoadPanel from 'devextreme-react/load-panel';
 import notify from 'devextreme/ui/notify';
@@ -13,9 +14,11 @@ import {
     getLines,
     getShifts,
     getMolds,
+    getHierarchy,
     getFormDefinitionById,
     getFormSubmissionById,
     updateFormSubmission,
+    approveSubmission,
     type OperatorDto,
     type BatteryTypeDto,
     type LineDto,
@@ -63,6 +66,7 @@ export function SubmissionResponse() {
     const [batteryTypes, setBatteryTypes] = useState<BatteryTypeDto[]>([]);
     const [moldList, setMoldList] = useState<MoldDto[]>([]);
     const [loading, setLoading] = useState(true);
+    const [allBatteryTypes, setAllBatteryTypes] = useState<BatteryTypeDto[]>([]);
 
     // ===== HEADER STATE =====
     const [tanggal, setTanggal] = useState<Date>(new Date());
@@ -90,6 +94,19 @@ export function SubmissionResponse() {
     const signatureSlots: FormSignatureSlotDto[] = formDef?.signatureSlots ?? [];
     const slotCount = formDef?.slotCount ?? 3;
 
+    // ===== APPROVAL WORKFLOW STATE =====
+    const [status, setStatus] = useState<string>('pending_leader');
+    const [hasNg, setHasNg] = useState(false);
+    const [operatorSignedAt, setOperatorSignedAt] = useState<string | null>(null);
+    const [leaderSignedAt, setLeaderSignedAt] = useState<string | null>(null);
+    const [kasubsieSignedAt, setKasubsieSignedAt] = useState<string | null>(null);
+    const [kasieSignedAt, setKasieSignedAt] = useState<string | null>(null);
+    const [leaderMemo, setLeaderMemo] = useState<string>('');
+    const [kasubsieMemo, setKasubsieMemo] = useState<string>('');
+    const [kasieMemo, setKasieMemo] = useState<string>('');
+    const [approvalSig, setApprovalSig] = useState<string | null>(null);
+    const [approvalMemo, setApprovalMemo] = useState<string>('');
+
     // ===== LOAD DATA =====
     useEffect(() => {
         async function loadData() {
@@ -99,13 +116,16 @@ export function SubmissionResponse() {
 
                 // Load reference data & form definition in parallel
                 const [ops, lines, shifts, btypes, molds, fd] = await Promise.all([
-                    getOperators(),
+                    getOperators(submission.lineId),
                     getLines(),
                     getShifts(),
-                    getBatteryTypes(),
+                    getBatteryTypes(submission.lineId ?? null),
                     getMolds(),
                     getFormDefinitionById(submission.formId),
                 ]);
+                // Also fetch ALL battery types for fallback
+                const allBt = submission.lineId ? await getBatteryTypes() : btypes;
+                setAllBatteryTypes(allBt);
                 setOperatorList(ops);
                 setLineList(lines);
                 setShiftList(shifts);
@@ -178,6 +198,17 @@ export function SubmissionResponse() {
                 fd.signatureSlots.forEach(slot => { sigs[slot.roleKey] = null; });
                 submission.signatures.forEach(sig => { sigs[sig.roleKey] = sig.signatureData; });
                 setSignatures(sigs);
+
+                // Approval workflow data
+                setStatus(submission.status ?? 'pending_leader');
+                setHasNg(submission.hasNg ?? false);
+                setOperatorSignedAt(submission.operatorSignedAt ?? null);
+                setLeaderSignedAt(submission.leaderSignedAt ?? null);
+                setKasubsieSignedAt(submission.kasubsieSignedAt ?? null);
+                setKasieSignedAt(submission.kasieSignedAt ?? null);
+                setLeaderMemo(submission.leaderMemo ?? '');
+                setKasubsieMemo(submission.kasubsieMemo ?? '');
+                setKasieMemo(submission.kasieMemo ?? '');
             } catch (err) {
                 console.error('Failed to load data:', err);
                 notify('Gagal memuat data submission', 'error', 3000);
@@ -187,6 +218,57 @@ export function SubmissionResponse() {
         }
         loadData();
     }, [id]);
+
+    // ===== CHAIN SELECT EFFECTS (edit mode) =====
+    const handleLineChange = useCallback((newLineId: number | null) => {
+        setLineId(newLineId);
+        setOperatorEmpId(null);
+        setHierarchyIds({});
+        setHierarchyNames(prev => ({ ...prev, leader: '', kasubsie: '', kasie: '' }));
+        // Clear battery slots type (since available types changed)
+        setBatterySlots(prev => prev.map(() => ({ type: null, mold: null })));
+    }, []);
+
+    const handleOperatorChange = useCallback(async (empId: string | null) => {
+        setOperatorEmpId(empId);
+        if (empId) {
+            try {
+                const h = await getHierarchy(empId);
+                setHierarchyIds({
+                    leaderEmpId: h.leaderEmpId ?? null,
+                    kasubsieEmpId: h.kasubsieEmpId ?? null,
+                    kasieEmpId: h.kasieEmpId ?? null,
+                });
+                setHierarchyNames(prev => ({
+                    ...prev,
+                    operator: h.operatorName ?? '',
+                    leader: h.leaderName ?? '',
+                    kasubsie: h.kasubsieName ?? '',
+                    kasie: h.kasieName ?? '',
+                }));
+            } catch { /* ignore */ }
+        } else {
+            setHierarchyIds({});
+            setHierarchyNames(prev => ({ ...prev, leader: '', kasubsie: '', kasie: '' }));
+        }
+    }, []);
+
+    // Effect: when lineId changes → reload batteryTypes + operators
+    useEffect(() => {
+        if (!editMode) return;
+        let cancelled = false;
+        (async () => {
+            const [filteredBt, filteredOps] = await Promise.all([
+                getBatteryTypes(lineId),
+                getOperators(lineId),
+            ]);
+            if (!cancelled) {
+                setBatteryTypes(filteredBt);
+                setOperatorList(filteredOps);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [editMode, lineId]);
 
     // ===== HANDLERS (only active in edit mode) =====
     const updateSlot = useCallback((index: number, field: 'type' | 'mold', value: string | null) => {
@@ -317,7 +399,7 @@ export function SubmissionResponse() {
         }
 
         if (item.type === 'visual') {
-            const val = (settings[key] as ('ok' | 'ng' | undefined)) ?? 'ok';
+            const val = (settings[key] as ('ok' | 'ng' | undefined)) ?? 'ng';
             if (editMode) {
                 return (
                     <div className="visual-check-pair">
@@ -410,6 +492,65 @@ export function SubmissionResponse() {
             </tr>
         ));
     }
+
+    // ===== APPROVAL =====
+    const currentApprovalRole = useMemo(() => {
+        if (status === 'pending_leader') return 'leader';
+        if (status === 'pending_kasubsie') return 'kasubsie';
+        if (status === 'pending_kasie') return 'kasie';
+        return null; // completed
+    }, [status]);
+
+    const currentApprovalEmpId = useMemo(() => {
+        if (currentApprovalRole === 'leader') return hierarchyIds.leaderEmpId ?? null;
+        if (currentApprovalRole === 'kasubsie') return hierarchyIds.kasubsieEmpId ?? null;
+        if (currentApprovalRole === 'kasie') return hierarchyIds.kasieEmpId ?? null;
+        return null;
+    }, [currentApprovalRole, hierarchyIds]);
+
+    const currentApprovalName = useMemo(() => {
+        if (currentApprovalRole) return hierarchyNames[currentApprovalRole] || currentApprovalRole;
+        return '';
+    }, [currentApprovalRole, hierarchyNames]);
+
+    const handleApprove = useCallback(async () => {
+        if (!currentApprovalRole) return;
+        if (!approvalSig) {
+            notify('Tanda tangan wajib diisi sebelum approve.', 'warning', 3000);
+            return;
+        }
+        if (hasNg && !approvalMemo.trim()) {
+            notify('Memo wajib diisi karena terdapat item NG.', 'warning', 3000);
+            return;
+        }
+        try {
+            const result = await approveSubmission(Number(id), {
+                role: currentApprovalRole,
+                signatureData: approvalSig,
+                memo: approvalMemo || null,
+            });
+            setStatus(result.status);
+            // Update timestamps locally
+            const now = new Date().toISOString();
+            if (currentApprovalRole === 'leader') { setLeaderSignedAt(now); setLeaderMemo(approvalMemo); }
+            if (currentApprovalRole === 'kasubsie') { setKasubsieSignedAt(now); setKasubsieMemo(approvalMemo); }
+            if (currentApprovalRole === 'kasie') { setKasieSignedAt(now); setKasieMemo(approvalMemo); }
+            // Update signature display
+            setSignatures(prev => ({ ...prev, [currentApprovalRole!]: approvalSig }));
+            setApprovalSig(null);
+            setApprovalMemo('');
+            notify(`Berhasil di-approve oleh ${currentApprovalRole}!`, 'success', 3000);
+        } catch (err) {
+            console.error('Approve error:', err);
+            notify('Gagal approve. Lihat console untuk detail.', 'error', 3000);
+        }
+    }, [currentApprovalRole, approvalSig, approvalMemo, hasNg, id]);
+
+    const formatTimestamp = (ts: string | null) => {
+        if (!ts) return null;
+        const d = new Date(ts);
+        return d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    };
 
     // ===== PRINT =====
     const handlePrint = useCallback(() => {
@@ -557,11 +698,12 @@ export function SubmissionResponse() {
                                                 valueExpr="id"
                                                 displayExpr="name"
                                                 value={lineId}
-                                                onValueChanged={(e) => setLineId(e.value)}
+                                                onValueChanged={(e) => handleLineChange(e.value)}
                                                 placeholder="Line"
                                                 stylingMode="underlined"
                                                 height={30}
                                                 width={120}
+                                                showClearButton={true}
                                             />
                                             <span className="separator">/</span>
                                             <SelectBox
@@ -591,14 +733,15 @@ export function SubmissionResponse() {
                                             displayExpr="name"
                                             valueExpr="empId"
                                             value={operatorEmpId}
-                                            onValueChanged={(e) => setOperatorEmpId(e.value)}
+                                            onValueChanged={(e) => handleOperatorChange(e.value)}
                                             searchEnabled={true}
                                             searchMode="contains"
-                                            placeholder="Ketik nama operator..."
+                                            placeholder={lineId ? 'Ketik nama operator...' : 'Pilih Line dulu...'}
                                             stylingMode="underlined"
                                             height={30}
                                             width={280}
                                             showClearButton={true}
+                                            disabled={!lineId}
                                         />
                                     ) : (
                                         <span className="readonly-text">{operatorName}</span>
@@ -757,6 +900,119 @@ export function SubmissionResponse() {
                                 type="default"
                                 onClick={addProblemRow}
                             />
+                        </div>
+                    )}
+                </div>
+
+                {/* ==================== APPROVAL WORKFLOW ==================== */}
+                <div className="approval-workflow-section no-print">
+                    <div className="section-title">APPROVAL WORKFLOW</div>
+
+                    {hasNg && (
+                        <div className="ng-warning-badge">
+                            <span className="ng-badge-icon">⚠</span>
+                            Terdapat item NG pada form ini
+                        </div>
+                    )}
+
+                    {/* --- Timeline --- */}
+                    <div className="approval-timeline">
+                        {/* Operator */}
+                        <div className={`timeline-step ${operatorSignedAt ? 'done' : 'pending'}`}>
+                            <div className="step-icon">{operatorSignedAt ? '✓' : '○'}</div>
+                            <div className="step-content">
+                                <div className="step-role">Operator</div>
+                                <div className="step-name">{hierarchyNames.operator || operatorName}</div>
+                                {operatorSignedAt && <div className="step-time">{formatTimestamp(operatorSignedAt)}</div>}
+                            </div>
+                        </div>
+                        {/* Leader */}
+                        <div className={`timeline-step ${leaderSignedAt ? 'done' : status === 'pending_leader' ? 'current' : 'pending'}`}>
+                            <div className="step-icon">{leaderSignedAt ? '✓' : status === 'pending_leader' ? '⏳' : '○'}</div>
+                            <div className="step-content">
+                                <div className="step-role">Leader</div>
+                                <div className="step-name">{hierarchyNames.leader || '-'}</div>
+                                {leaderSignedAt && <div className="step-time">{formatTimestamp(leaderSignedAt)}</div>}
+                                {leaderMemo && <div className="step-memo">Memo: {leaderMemo}</div>}
+                            </div>
+                        </div>
+                        {/* Kasubsie */}
+                        <div className={`timeline-step ${kasubsieSignedAt ? 'done' : status === 'pending_kasubsie' ? 'current' : 'pending'}`}>
+                            <div className="step-icon">{kasubsieSignedAt ? '✓' : status === 'pending_kasubsie' ? '⏳' : '○'}</div>
+                            <div className="step-content">
+                                <div className="step-role">Ka. Subsie</div>
+                                <div className="step-name">{hierarchyNames.kasubsie || '-'}</div>
+                                {kasubsieSignedAt && <div className="step-time">{formatTimestamp(kasubsieSignedAt)}</div>}
+                                {kasubsieMemo && <div className="step-memo">Memo: {kasubsieMemo}</div>}
+                            </div>
+                        </div>
+                        {/* Kasie */}
+                        <div className={`timeline-step ${kasieSignedAt ? 'done' : status === 'pending_kasie' ? 'current' : 'pending'}`}>
+                            <div className="step-icon">{kasieSignedAt ? '✓' : status === 'pending_kasie' ? '⏳' : '○'}</div>
+                            <div className="step-content">
+                                <div className="step-role">Ka. Sie</div>
+                                <div className="step-name">{hierarchyNames.kasie || '-'}</div>
+                                {kasieSignedAt && <div className="step-time">{formatTimestamp(kasieSignedAt)}</div>}
+                                {kasieMemo && <div className="step-memo">Memo: {kasieMemo}</div>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* --- Approve action (only if not completed) --- */}
+                    {currentApprovalRole && (
+                        <div className="approve-action-section">
+                            <div className="approve-action-title">
+                                Approve sebagai <strong>{currentApprovalRole === 'kasubsie' ? 'Ka. Subsie' : currentApprovalRole === 'kasie' ? 'Ka. Sie' : 'Leader'}</strong>
+                                {currentApprovalName && <span> ({currentApprovalName})</span>}
+                            </div>
+
+                            {/* Memo */}
+                            <div className="approve-memo">
+                                <label className="approve-label">
+                                    Memo / Catatan {hasNg ? <span className="required-mark">*wajib (ada NG)</span> : <span className="optional-mark">(opsional)</span>}
+                                </label>
+                                <TextArea
+                                    value={approvalMemo}
+                                    onValueChanged={(e) => setApprovalMemo(e.value ?? '')}
+                                    placeholder="Tulis catatan..."
+                                    height={80}
+                                    stylingMode="outlined"
+                                />
+                            </div>
+
+                            {/* Signature */}
+                            <div className="approve-signature">
+                                <label className="approve-label">Tanda Tangan Digital <span className="required-mark">*wajib</span></label>
+                                <SignaturePad
+                                    key={`approval-${currentApprovalRole}`}
+                                    label="TTD Approval"
+                                    name={currentApprovalName}
+                                    empId={currentApprovalEmpId}
+                                    initialValue={null}
+                                    onChange={(d) => setApprovalSig(d)}
+                                />
+                            </div>
+
+                            {/* Button */}
+                            <div className="approve-btn-row">
+                                <Button
+                                    text="Approve & Submit"
+                                    icon="check"
+                                    type="success"
+                                    stylingMode="contained"
+                                    onClick={handleApprove}
+                                    disabled={!approvalSig || (hasNg && !approvalMemo.trim())}
+                                    width={220}
+                                    height={40}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {status === 'completed' && (
+                        <div className="approval-completed-banner">
+                            <span className="completed-icon">✓</span>
+                            Semua approval telah selesai
                         </div>
                     )}
                 </div>
