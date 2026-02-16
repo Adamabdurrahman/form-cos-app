@@ -425,6 +425,32 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
         return null;
     }, [operatorEmpId, hierarchyIds]);
 
+    /** Map roleKey to display label */
+    const getRoleDisplayName = useCallback((roleKey: string): string => {
+        const map: Record<string, string> = {
+            operator: 'Operator',
+            leader: 'Leader',
+            kasubsie: 'Kasubsie',
+            kasie: 'Kasie',
+        };
+        return map[roleKey] ?? roleKey;
+    }, []);
+
+    /** Get the person's name for a role */
+    const getNameForRole = useCallback((roleKey: string): string => {
+        if (roleKey === 'operator') return operatorName || '-';
+        return hierarchyNames[roleKey] || '-';
+    }, [operatorName, hierarchyNames]);
+
+    /** Format date as dd-MMM-yyyy */
+    const formatSignatureDate = useCallback((date: Date): string => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = months[date.getMonth()];
+        const y = date.getFullYear();
+        return `${d}-${m}-${y}`;
+    }, []);
+
     // ===== RENDER HELPERS =====
 
     function renderSettingInput(item: CheckItemDto, subRow: SubRowDto | null, slotIdx: number) {
@@ -641,20 +667,35 @@ export function CosValidation({ formCode = 'COS_VALIDATION' }: { formCode?: stri
                                 <div className="approval-section">
                                     {signatureSlots.map(slot => (
                                         <div className="approval-box" key={slot.roleKey}>
-                                            {slot.roleKey === 'operator' ? (
-                                                <SignaturePad
-                                                    label={slot.label}
-                                                    name={hierarchyNames[slot.roleKey] || operatorName || slot.roleKey}
-                                                    empId={getEmpIdForRole(slot.roleKey)}
-                                                    onChange={(d) => updateSignature(slot.roleKey, d)}
-                                                />
-                                            ) : (
-                                                <div className="signature-display-only">
-                                                    <div className="signature-display-label">{slot.label}</div>
-                                                    <div className="signature-display-placeholder">—</div>
-                                                    <div className="signature-display-name">{hierarchyNames[slot.roleKey] || '-'}</div>
-                                                </div>
-                                            )}
+                                            {/* 1. Header — Status Label */}
+                                            <div className="sig-box-header">{slot.label}</div>
+
+                                            {/* 2. Canvas TTD */}
+                                            <div className="sig-box-canvas">
+                                                {slot.roleKey === 'operator' ? (
+                                                    <SignaturePad
+                                                        empId={getEmpIdForRole(slot.roleKey)}
+                                                        onChange={(d) => updateSignature(slot.roleKey, d)}
+                                                    />
+                                                ) : (
+                                                    <div className="sig-box-placeholder">
+                                                        {signatures[slot.roleKey] ? (
+                                                            <img src={signatures[slot.roleKey]!} alt={slot.label} className="sig-box-img" />
+                                                        ) : (
+                                                            <span className="sig-box-dash">—</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* 3. Role */}
+                                            <div className="sig-box-role">{getRoleDisplayName(slot.roleKey)}</div>
+
+                                            {/* 4. Nama Jelas */}
+                                            <div className="sig-box-name">{getNameForRole(slot.roleKey)}</div>
+
+                                            {/* 5. Tanggal */}
+                                            <div className="sig-box-date">{formatSignatureDate(tanggal)}</div>
                                         </div>
                                     ))}
                                 </div>

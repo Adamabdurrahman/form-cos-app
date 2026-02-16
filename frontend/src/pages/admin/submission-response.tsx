@@ -940,7 +940,7 @@ export function SubmissionResponse() {
                         <div className={`timeline-step ${kasubsieSignedAt ? 'done' : status === 'pending_kasubsie' ? 'current' : 'pending'}`}>
                             <div className="step-icon">{kasubsieSignedAt ? '✓' : status === 'pending_kasubsie' ? '⏳' : '○'}</div>
                             <div className="step-content">
-                                <div className="step-role">Ka. Subsie</div>
+                                <div className="step-role">Kasubsie</div>
                                 <div className="step-name">{hierarchyNames.kasubsie || '-'}</div>
                                 {kasubsieSignedAt && <div className="step-time">{formatTimestamp(kasubsieSignedAt)}</div>}
                                 {kasubsieMemo && <div className="step-memo">Memo: {kasubsieMemo}</div>}
@@ -950,7 +950,7 @@ export function SubmissionResponse() {
                         <div className={`timeline-step ${kasieSignedAt ? 'done' : status === 'pending_kasie' ? 'current' : 'pending'}`}>
                             <div className="step-icon">{kasieSignedAt ? '✓' : status === 'pending_kasie' ? '⏳' : '○'}</div>
                             <div className="step-content">
-                                <div className="step-role">Ka. Sie</div>
+                                <div className="step-role">Kasie</div>
                                 <div className="step-name">{hierarchyNames.kasie || '-'}</div>
                                 {kasieSignedAt && <div className="step-time">{formatTimestamp(kasieSignedAt)}</div>}
                                 {kasieMemo && <div className="step-memo">Memo: {kasieMemo}</div>}
@@ -962,7 +962,7 @@ export function SubmissionResponse() {
                     {currentApprovalRole && (
                         <div className="approve-action-section">
                             <div className="approve-action-title">
-                                Approve sebagai <strong>{currentApprovalRole === 'kasubsie' ? 'Ka. Subsie' : currentApprovalRole === 'kasie' ? 'Ka. Sie' : 'Leader'}</strong>
+                                Approve sebagai <strong>{currentApprovalRole === 'kasubsie' ? 'Kasubsie' : currentApprovalRole === 'kasie' ? 'Kasie' : 'Leader'}</strong>
                                 {currentApprovalName && <span> ({currentApprovalName})</span>}
                             </div>
 

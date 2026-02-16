@@ -295,6 +295,41 @@ public class CosSubmission
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
 
+    // ─── Approval Workflow ───
+
+    /// <summary>Approval status: pending_leader, pending_kasubsie, pending_kasie, completed</summary>
+    [Column("status"), MaxLength(30)]
+    public string Status { get; set; } = "pending_leader";
+
+    /// <summary>Whether any check item has NG value</summary>
+    [Column("has_ng")]
+    public bool HasNg { get; set; } = false;
+
+    [Column("operator_signed_at")]
+    public DateTime? OperatorSignedAt { get; set; }
+
+    [Column("leader_signed_at")]
+    public DateTime? LeaderSignedAt { get; set; }
+
+    [Column("kasubsie_signed_at")]
+    public DateTime? KasubsieSignedAt { get; set; }
+
+    [Column("kasie_signed_at")]
+    public DateTime? KasieSignedAt { get; set; }
+
+    [Column("leader_memo"), MaxLength(1000)]
+    public string? LeaderMemo { get; set; }
+
+    [Column("kasubsie_memo"), MaxLength(1000)]
+    public string? KasubsieMemo { get; set; }
+
+    [Column("kasie_memo"), MaxLength(1000)]
+    public string? KasieMemo { get; set; }
+
+    /// <summary>Leader approval type: "signature" or "memo_upload"</summary>
+    [Column("leader_approval_type"), MaxLength(20)]
+    public string? LeaderApprovalType { get; set; }
+
     // Navigation
     [ForeignKey(nameof(FormId))]
     public CosFormDefinition? Form { get; set; }
@@ -302,6 +337,7 @@ public class CosSubmission
     public ICollection<CosCheckValue> CheckValues { get; set; } = new List<CosCheckValue>();
     public ICollection<CosProblem> Problems { get; set; } = new List<CosProblem>();
     public ICollection<CosSignatureEntry> Signatures { get; set; } = new List<CosSignatureEntry>();
+    public ICollection<CosApprovalAttachment> ApprovalAttachments { get; set; } = new List<CosApprovalAttachment>();
 }
 
 [Table("cos_check_values")]
@@ -356,6 +392,39 @@ public class CosSignatureEntry
 
     [Column("signature_data", TypeName = "nvarchar(max)")]
     public string? SignatureData { get; set; }
+
+    [Column("signed_at")]
+    public DateTime? SignedAt { get; set; }
+
+    [ForeignKey(nameof(SubmissionId)), JsonIgnore]
+    public CosSubmission? Submission { get; set; }
+}
+
+// ─── Approval Attachments (memo file uploads) ───
+
+[Table("cos_approval_attachments")]
+public class CosApprovalAttachment
+{
+    [Key, Column("id")]
+    public int Id { get; set; }
+
+    [Column("submission_id")]
+    public int SubmissionId { get; set; }
+
+    [Required, Column("role_key"), MaxLength(50)]
+    public string RoleKey { get; set; } = null!;
+
+    [Required, Column("file_name"), MaxLength(255)]
+    public string FileName { get; set; } = null!;
+
+    [Required, Column("file_path"), MaxLength(500)]
+    public string FilePath { get; set; } = null!;
+
+    [Column("content_type"), MaxLength(100)]
+    public string? ContentType { get; set; }
+
+    [Column("uploaded_at")]
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
     [ForeignKey(nameof(SubmissionId)), JsonIgnore]
     public CosSubmission? Submission { get; set; }

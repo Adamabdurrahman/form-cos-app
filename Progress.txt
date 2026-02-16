@@ -1,6 +1,6 @@
 ================================================================================
   PROJECT PROGRESS LOG — Form COS (CheckSheet)
-  Last Updated : 2026-02-15 (Sesi 3 — FormId Implementation)
+  Last Updated : 2026-02-15 (Sesi 4 — Merge Architecture Analysis)
   Author       : Technical Lead (onboarding session)
 ================================================================================
 
@@ -298,6 +298,251 @@
   2. AddSourceItemNumToBatteryType       → ✅ Applied (kolom SourceItemNum + KatId)
   3. AddFormIdFkToBatteryType            → ✅ Applied (kolom FormId FK → cos_form_definitions)
 
+
+════════════════════════════════════════════════════════════════════════════════
+ 4. MERGE ARCHITECTURE ANALYSIS (MY WORK vs. FRIEND'S WORK)
+    Date: 2026-02-15 (Sesi 4 — Git Merge Resolution)
+    Branch: uji_coba ← friend-repo/main (--allow-unrelated-histories)
+    Strategy: "Backend Dictatorship" — Backend milik kita TIDAK BISA DIGANTI.
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  RINGKASAN CEPAT                                                       │
+  │                                                                         │
+  │  Total file conflict  : 135 files                                      │
+  │  Resolved via --ours  : 124 files (backend + build-and-run.sh)         │
+  │  Resolved via --theirs:   9 files (frontend UI/CSS)                    │
+  │  Manual merge         :   2 files (cos-api.ts + cos-validation.tsx)    │
+  │  MySQL migrations     :  10 files DIHAPUS (post-merge cleanup)         │
+  │  Final git status     : CLEAN — 0 conflicts, 0 markers                │
+  │  Build result         : ✅ Backend 0 errors, ✅ Frontend 0 errors      │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+  A. THE CORE — MY CONTRIBUTION (Backend Lead / "Otak Sistem")
+  ═══════════════════════════════════════════════════════════════
+
+  Layer ini adalah OTAK dari seluruh sistem. Semua business logic, data 
+  processing, dan database interaction berjalan di sini. Tanpa layer ini,
+  frontend hanyalah tampilan kosong tanpa data.
+
+  📁 Files (KEEP OURS — git checkout --ours):
+  ─────────────────────────────────────────
+  - backend/                              → Seluruh folder backend (123 files)
+  - build-and-run.sh                      → Script deployment
+  - frontend/vite.config.ts               → Proxy port 5131 (sudah diperbaiki)
+
+  🔧 Fitur Backend Vital yang Dipertahankan:
+  ─────────────────────────────────────────
+
+  1. SQL Server Configuration (Program.cs + appsettings.json)
+     ├─ Provider: Microsoft.EntityFrameworkCore.SqlServer 8.0.10
+     ├─ Connection: ADAM123\SQLEXPRESS → db_master_data
+     ├─ UseCompatibilityLevel(120) → mencegah error OPENJSON
+     └─ CORS: WithOrigins localhost:5173/5174/5175/3000
+
+  2. BatteryTypeSyncService (Services/BatteryTypeSyncService.cs)
+     ├─ BackgroundService: auto-sync saat startup + loop 30 menit
+     ├─ Parsing logic: tlkp_item → cos_battery_types (format baru)
+     ├─ Filter: Index[1][0]='A', Index[1][2]='U' → 2048 dari 11751 items
+     ├─ Anti-duplikasi: HashSet<string> case-insensitive
+     └─ Default FormId = 1 untuk battery baru (COS_VALIDATION)
+
+  3. FormId Linking (Models/CosModels.cs + Controllers/BatteryController.cs)
+     ├─ CosBatteryType.FormId → FK nullable ke cos_form_definitions
+     ├─ API: GET /api/battery/types → return formId di JSON response
+     ├─ API: GET /api/formdefinition/{id} → fetch form definition by ID
+     └─ Mapping: FormId=1 → COS_VALIDATION, FormId=2 → FORM_COS_MF
+
+  4. Controllers yang Sudah Di-optimize:
+     ├─ BatteryController.cs    → Types, Lines, Shifts, Molds (include Standards)
+     ├─ FormDefinitionController.cs → GetByCode, GetById (include CheckItems/Problems/Signatures)
+     ├─ FormSubmissionController.cs → CRUD submissions + approval workflow
+     ├─ PersonnelController.cs  → Operators, Leaders, Kasubsie, Kasie, Hierarchy
+     ├─ AdminController.cs      → Admin CRUD untuk check items, battery types, standards
+     └─ EmployeeSignatureController.cs → Persistent signature per employee
+
+  5. Database Migrations (SQL Server Only):
+     ├─ InitialCreate                → Schema awal
+     ├─ AddSourceItemNumToBatteryType → Kolom SourceItemNum + KatId
+     ├─ AddFormIdToBatteryType       → Kolom FormId (step 1)
+     └─ AddFormIdFkToBatteryType     → FK constraint FormId → cos_form_definitions
+
+
+  B. THE SHELL — FRIEND'S CONTRIBUTION (Frontend Lead / "Wajah Sistem")
+  ═══════════════════════════════════════════════════════════════
+
+  Layer ini adalah WAJAH dari sistem — semua yang user lihat dan sentuh.
+  Teman saya fokus pada UX/UI, form protection, dan approval workflow di sisi
+  tampilan. Kontribusinya melengkapi backend saya dengan interaksi visual.
+
+  📁 Files (ACCEPT THEIRS — git checkout --theirs):
+  ─────────────────────────────────────────
+  - frontend/src/App.tsx                           → Root app + routing
+  - frontend/src/components/signature-pad/*        → Komponen tanda tangan (2 files)
+  - frontend/src/pages/admin/admin-layout.tsx       → Layout admin panel
+  - frontend/src/pages/admin/admin-layout.scss      → Styling admin panel
+  - frontend/src/pages/admin/submission-list.tsx    → Daftar submission
+  - frontend/src/pages/admin/submission-response.tsx → Detail/approve submission
+  - frontend/src/pages/admin/submission-response.scss → Styling response
+  - frontend/src/pages/cos-validation/cos-validation.scss → Styling form utama
+
+  🎨 Fitur Frontend dari Teman yang Diadopsi:
+  ─────────────────────────────────────────
+
+  1. Form Protection (Mencegah Data Hilang)
+     ├─ useBlocker (react-router-dom) → Block navigasi saat form dirty
+     ├─ window.beforeunload → Warn saat close/refresh tab
+     └─ sessionStorage auto-save → Draft tersimpan otomatis (debounce 400ms)
+
+  2. Chain Select (Dropdown Berantai)
+     ├─ Pilih Line → Filter Operator & Battery Types untuk line tersebut
+     ├─ Pilih Operator → Auto-fetch hierarchy (Leader, Kasubsie, Kasie)
+     └─ Operator disabled jika Line belum dipilih
+
+  3. NG Warning System
+     ├─ dxCustomDialog → Konfirmasi "Ada item NG, yakin submit?"
+     ├─ dxNotify → Toast notification sukses/gagal
+     └─ SCW Warning → "Lakukan SCW (Stop Call Wait)!" jika ada NG
+
+  4. Clear Form
+     ├─ Tombol "Clear Form" → Reset semua state ke default
+     └─ Hapus draft dari sessionStorage
+
+  5. Signature Display-Only
+     ├─ Operator → SignaturePad aktif (bisa tanda tangan)
+     └─ Leader/Kasubsie/Kasie → Display-only (nama saja, tanda tangan via approval)
+
+  6. Admin Panel UI
+     ├─ Submission List → Tabel daftar semua submission
+     ├─ Submission Response → Detail view + approve/reject per role
+     └─ Admin Layout → Sidebar navigation
+
+  7. API Endpoints Tambahan dari Teman (yang kita adopsi):
+     ├─ GET  /api/personnel/operators?lineId=X → Filter operator per line
+     ├─ GET  /api/battery/types?lineId=X       → Filter battery types per line
+     ├─ GET  /api/personnel/hierarchy/{empId}   → Auto-fetch atasan
+     ├─ PUT  /api/formsubmission/{id}/approve   → Approval workflow
+     ├─ GET  /api/employeesignature/{empId}      → Persistent signature
+     └─ PUT  /api/employeesignature/{empId}      → Save signature
+
+
+  C. THE HYBRID RESULT — How it Works Together
+  ═══════════════════════════════════════════════════════════════
+
+  Frontend teman saya sekarang berbicara langsung dengan Backend SQL Server saya
+  melalui Vite proxy (localhost:5173 → localhost:5131). Berikut flow integrasinya:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                        DATA FLOW ARCHITECTURE                          │
+  │                                                                         │
+  │  [Browser localhost:5173]                                               │
+  │       │                                                                 │
+  │       ├─ User pilih LINE (UI: Teman)                                    │
+  │       │   └─→ GET /api/battery/types?lineId=X (Backend: Saya)          │
+  │       │   └─→ GET /api/personnel/operators?lineId=X (Backend: Saya)    │
+  │       │                                                                 │
+  │       ├─ User pilih BATTERY TYPE (UI: Teman)                            │
+  │       │   └─→ handleBatteryTypeChange() (Logic: Saya)                  │
+  │       │   └─→ Cek formId dari BatteryTypeDto (Data: Saya)              │
+  │       │   └─→ Jika formId berbeda:                                     │
+  │       │       └─→ GET /api/formdefinition/{id} (Backend: Saya)         │
+  │       │       └─→ Re-render form baru (UI: Teman + Logic: Saya)        │
+  │       │                                                                 │
+  │       ├─ User isi CHECK ITEMS (UI: Teman)                              │
+  │       │   └─→ Validasi min/max dari BatteryStandard (Data: Saya)       │
+  │       │   └─→ Visual OK/NG toggle (UI: Teman)                         │
+  │       │   └─→ Out-of-range highlight merah (Logic: Saya)               │
+  │       │                                                                 │
+  │       ├─ User klik SUBMIT (UI: Teman + Logic: Gabungan)                │
+  │       │   └─→ Cek ada NG? → dxCustomDialog warning (UI: Teman)        │
+  │       │   └─→ POST /api/formsubmission (Backend: Saya)                 │
+  │       │   └─→ dxNotify sukses/gagal (UI: Teman)                        │
+  │       │   └─→ SCW warning jika NG (UI: Teman)                         │
+  │       │                                                                 │
+  │       └─ Auto-save draft ke sessionStorage (Logic: Teman)              │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  Contoh Interaksi Nyata:
+  ─────────────────────────────────────────
+  1. User buka halaman → Form COS_VALIDATION di-load via API saya.
+  2. User pilih Line "COS-2" → Dropdown battery & operator difilter (API saya, UI teman).
+  3. User pilih "80D26L0 - MF00 (TJGS)" → formId=2 terdeteksi (data saya),
+     form di-switch ke "BATTERY ELEMENT AMB ASSY./ PROD. II" (logic saya, render teman).
+  4. User isi temperature 450 (di bawah min 460) → Highlight merah (logic saya, CSS teman).
+  5. User submit dengan item NG → Dialog warning muncul (UI teman), data tersimpan ke
+     SQL Server (backend saya).
+
+
+  D. DISCARDED ELEMENTS — What We Threw Away
+  ═══════════════════════════════════════════════════════════════
+
+  ❌ DITOLAK: Seluruh Konfigurasi MySQL/Pomelo dari Repo Teman
+  ─────────────────────────────────────────
+
+  Teman saya mengembangkan backend-nya menggunakan MySQL (Pomelo provider).
+  Seluruh konfigurasi dan migration MySQL-nya DIBUANG karena:
+
+  1. Kita sudah bermigrasi ke SQL Server sejak Sesi 1.
+  2. Package Pomelo.EntityFrameworkCore.MySql sudah dihapus dari .csproj.
+  3. Semua migration files MySQL menggunakan sintaks yang tidak kompatibel:
+     - MySqlModelBuilderExtensions (tidak ada di SQL Server provider)
+     - MySqlPropertyBuilderExtensions (tidak ada di SQL Server provider)
+     - Migration naming berbeda (MySQL auto-increment vs SQL Server identity)
+
+  📁 Migration Files MySQL yang DIHAPUS (10 files):
+  ─────────────────────────────────────────
+  ❌ 20260210033936_MasterDataIntegration.cs          (+Designer.cs)
+  ❌ 20260211015021_AddEmployeeSignatures.cs           (+Designer.cs)
+  ❌ 20260212012840_AddApprovalWorkflow.cs              (+Designer.cs)
+  ❌ 20260212031337_AddLineBatteryTypeMapping.cs        (+Designer.cs)
+  ❌ 20260212034143_AddGroupIdToSubmission.cs           (+Designer.cs)
+
+  ALASAN: File-file ini menyebabkan 163 BUILD ERRORS saat dotnet build.
+  Tanpa menghapusnya, backend TIDAK BISA dikompilasi sama sekali.
+
+  ⚠️ CATATAN PENTING:
+  Fitur-fitur yang di-create oleh migration teman (EmployeeSignatures,
+  ApprovalWorkflow, LineBatteryTypeMapping, GroupId) SUDAH ADA di backend
+  kita melalui migration kita sendiri (InitialCreate + updates).
+  Jadi TIDAK ADA fitur yang hilang — hanya migration MySQL yang dibuang.
+
+
+  E. GIT COMMIT LOG (Branch: uji_coba)
+  ═══════════════════════════════════════════════════════════════
+
+  Commit 1: ecd6f93
+    Message: "merge: integrate friend frontend with Backend Dictatorship strategy"
+    → Menyelesaikan semua 135 file conflict
+    → Manual merge cos-api.ts + cos-validation.tsx
+
+  Commit 2: 6da3fe5
+    Message: "cleanup: remove MySQL migration files from friend's repo that broke dotnet build"
+    → Hapus 10 migration files MySQL
+    → 33 files changed, 19579 deletions
+
+  Commit 3: 80caf87
+    Message: "cleanup: remove temporary test files"
+    → Hapus api_test.json, formdef_test.json
+
+
+  F. PORT CONFIGURATION (Verified & Synced)
+  ═══════════════════════════════════════════════════════════════
+
+  ┌──────────────┬─────────────────────────┬──────────────────────────────┐
+  │ Komponen     │ URL                     │ File Konfigurasi             │
+  ├──────────────┼─────────────────────────┼──────────────────────────────┤
+  │ Backend API  │ http://localhost:5131    │ launchSettings.json (http)   │
+  │ Frontend UI  │ http://localhost:5173    │ Vite default                 │
+  │ Vite Proxy   │ /api → localhost:5131   │ vite.config.ts               │
+  │ CORS Allowed │ localhost:5173/5174/3000 │ Program.cs                   │
+  └──────────────┴─────────────────────────┴──────────────────────────────┘
+
+  BUKA DI BROWSER: http://localhost:5173/cos-validation
+  (JANGAN buka localhost:5131 — itu hanya API server)
+
+
 ================================================================================
   END OF PROGRESS LOG
+  Last Updated: 2026-02-15 22:13 (Sesi 4 — Merge Architecture Analysis)
 ================================================================================

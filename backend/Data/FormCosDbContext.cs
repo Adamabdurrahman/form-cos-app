@@ -41,6 +41,7 @@ public class FormCosDbContext : DbContext
     public DbSet<CosProblem> CosProblems => Set<CosProblem>();
     public DbSet<CosSignatureEntry> CosSignatureEntries => Set<CosSignatureEntry>();
     public DbSet<CosEmployeeSignature> CosEmployeeSignatures => Set<CosEmployeeSignature>();
+    public DbSet<CosApprovalAttachment> CosApprovalAttachments => Set<CosApprovalAttachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -93,6 +94,8 @@ public class FormCosDbContext : DbContext
             .HasMany(s => s.Problems).WithOne(p => p.Submission).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<CosSubmission>()
             .HasMany(s => s.Signatures).WithOne(s => s.Submission).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<CosSubmission>()
+            .HasMany(s => s.ApprovalAttachments).WithOne(a => a.Submission).OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<CosFormDefinition>()
             .HasMany(f => f.CheckItems).WithOne(c => c.Form).OnDelete(DeleteBehavior.Cascade);
