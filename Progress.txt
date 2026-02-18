@@ -1,0 +1,1562 @@
+================================================================================
+  PROJECT PROGRESS LOG — Form COS (CheckSheet)
+  Last Updated : 2026-02-18 (Sesi 10 — Setup Multi-Server & Schema Compatibility Fix)
+  Author       : Technical Lead (onboarding session)
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+ 1. STATUS TERKINI (✅ DONE)
+════════════════════════════════════════════════════════════════════════════════
+
+  ✅ Backend (.NET Core — ASP.NET Web API)
+  ─────────────────────────────────────────
+  - Migrasi dari MySQL (Pomelo) ke SQL Server BERHASIL SELESAI.
+  - Package "Pomelo.EntityFrameworkCore.MySql" sudah DIHAPUS dari backend.csproj.
+  - Package "Microsoft.EntityFrameworkCore.SqlServer" versi 8.0.10 sudah 
+    ter-install dan aktif.
+  - Error "CS0103: The name 'ServerVersion' does not exist in the current 
+    context" di file Program.cs SUDAH DIPERBAIKI.
+    → Baris "ServerVersion.AutoDetect()" (sintaks khusus Pomelo MySQL) sudah 
+      dihapus.
+    → Konfigurasi AddDbContext sudah diubah ke: options.UseSqlServer(...)
+  - "dotnet build"  → ✅ BUILD SUCCEEDED (0 errors, 0 warnings)
+  - "dotnet run"    → ✅ RUNNING (backend berjalan normal, listening on port)
+  - [SESI 3] Modifikasi Model CosBatteryType (backend/Models/CosModels.cs):
+    → Ditambahkan properti: public int? FormId { get; set; }
+    → Ditambahkan FK navigation: [ForeignKey(nameof(FormId))] CosFormDefinition? Form
+    → API Endpoint GET /api/battery/types sekarang mengembalikan field "formId" di JSON.
+  - [SESI 3] Update BatteryTypeSyncService.cs:
+    → Battery baru yang di-sync otomatis mendapat FormId = 1 (default COS_VALIDATION).
+
+  ✅ Database Configuration (SQL Server Compatibility)
+  ─────────────────────────────────────────
+  - Menambahkan .UseCompatibilityLevel(120) pada konfigurasi SQL Server 
+    di Program.cs (baris AddDbContext).
+  - Level 120 = SQL Server 2014 compatibility mode.
+  - ALASAN: Mencegah error fungsi OPENJSON yang tidak tersedia di SQL Server
+    versi lama / SQL Express. Error ini muncul saat dropdown battery dipilih
+    dan EF Core men-generate query dengan .Contains() yang menggunakan OPENJSON.
+  - Dengan level 120, EF Core akan menggunakan pendekatan query lama (tanpa
+    OPENJSON) yang kompatibel dengan semua versi SQL Server.
+
+  ✅ Database Schema (Migration)
+  ─────────────────────────────────────────
+  - Folder Migrations/ lama (bekas MySQL) sudah DIHAPUS.
+  - Migration "InitialCreate" sudah di-generate ulang untuk SQL Server.
+  - Migration "AddSourceItemNumToBatteryType" → ✅ SUKSES
+    → Kolom baru "SourceItemNum" (varchar, nullable) ditambahkan ke tabel 
+      cos_battery_types untuk tracking data source dari tlkp_item.
+    → Kolom baru "KatId" (int, nullable) ditambahkan ke tabel cos_battery_types
+      untuk menyimpan kategori asal dari tlkp_item.
+  - "dotnet ef database update" → ✅ SUKSES
+  - Database "db_master_data" sudah TERBENTUK di server ADAM123\SQLEXPRESS.
+  - Semua tabel sudah ter-create sesuai schema dari DbContext (EF Core).
+  - Form Baru Dibuat: Form-B1-KM.018 (ID Generated via Script)
+    → Judul: "BATTERY ELEMENT AMB ASSY./ PROD. II"
+    → Mesin: "Mesin COS (Cast On Strap)"
+  - Check Items (Mapping Parameter):
+    → Sudah dibuat 12 parameter pengecekan sesuai PDF (Temp Pot, Temp Pipe L/R, Temp Mould, dll).
+    → Tipe input: 'numeric' (langsung input angka).
+  - Standar Nilai (Battery ID 336):
+    → Sudah di-input range Min/Max khusus untuk tipe "80D26L0 - MF00 (TJGS)".
+    → Contoh: Temp Pot (460-480), Temp Pipe (425-445).
+  - Signature Slots:
+    → Operator (Dibuat), Leader (Diperiksa), Kasubsie (Diketahui), Kasie (Disetujui).
+  - [SESI 3] Migration "AddFormIdFkToBatteryType" → ✅ SUKSES
+    → Kolom baru "FormId" (int, nullable, FK → cos_form_definitions.id)
+      ditambahkan ke tabel cos_battery_types.
+    → Fungsi: Menghubungkan setiap battery type ke form definition yang sesuai.
+  - [SESI 3] Data Patching (SQL Manual) → ✅ SUKSES
+    → 329 battery types (tanpa form_id) di-set ke FormId = 1 (COS_VALIDATION).
+    → Battery ID 336 ("80D26L0 - MF00 (TJGS)") → FormId = 2 (FORM_COS_MF).
+    → Query: UPDATE cos_battery_types SET form_id = 1 WHERE form_id IS NULL;
+
+  ✅ Feature Baru: Battery Type Sync Service (Background Job)
+  ─────────────────────────────────────────
+  - File BARU dibuat: backend/Services/BatteryTypeSyncService.cs
+  - Tipe: BackgroundService (hosted service, berjalan otomatis di background).
+  - Fungsi: Sinkronisasi data baterai dari tabel legacy "tlkp_item" ke tabel 
+    aplikasi "cos_battery_types".
+  
+  - LOGIC PARSING & FILTERING:
+    Format item_num: "W-AEUC-GTZ8V00-HO-VR00" (dipisah strip '-')
+    
+    1. Safety Check:
+       ├─ Minimal 5 segment (jika < 5 → SKIP). Mencegah IndexOutOfRange saat akses Index 3 & 4.
+    
+    2. Filter Posisi Ketat (Index 1):
+       ├─ Karakter pertama ([0]) HARUS 'A'
+       ├─ Karakter ketiga ([2]) HARUS 'U'
+       ├─ Contoh Valid: "AAUC", "AAUB"
+       ├─ Contoh Invalid: "1AUA", "AACA", "UCMA"
+    
+    3. Naming Convention Baru (Index 2 + 3 + 4):
+       ├─ Format: "{BaseName} - {Suffix} ({Variant})"
+       ├─ Contoh Input: "W-AAUC-40B19L0-HPM-MF00"
+       ├─ Index 2 (Base): "40B19L0"
+       ├─ Index 3 (Variant): "HPM"
+       ├─ Index 4 (Suffix): "MF00"
+       └─ Output Name: "40B19L0 - MF00 (HPM)"
+    
+
+  - UPSERT LOGIC (Anti-Duplikasi):
+    ├─ Lookup menggunakan HashSet<string> (case-insensitive)
+    ├─ Data lama di cos_battery_types SUDAH DI-TRUNCATE dan di-sync ulang dengan format baru.
+    └─ Logging Math sudah diperbaiki (tidak ada angka minus).
+    ├─ Lookup menggunakan HashSet<string> (case-insensitive, O(1) lookup)
+    ├─ Jika Name BELUM ADA di cos_battery_types → INSERT
+    ├─ Jika Name SUDAH ADA → SKIP
+    └─ Error handling per-item (try-catch di dalam loop, tidak menghentikan 
+       proses jika ada format string yang aneh)
+
+  - Model BARU dibuat: backend/Models/TlkpItem.cs
+    → Entity untuk tabel legacy "tlkp_item" dengan Composite PK (item_num + kat_id)
+    → Didaftarkan di FormCosDbContext sebagai DbSet<TlkpItem>
+
+  ✅ Service Registration
+  ─────────────────────────────────────────
+  - BatteryTypeSyncService sudah didaftarkan di Program.cs menggunakan:
+    builder.Services.AddHostedService<BatteryTypeSyncService>();
+  - Service berjalan otomatis saat backend startup.
+
+  ✅ Frontend (React TSX + Vite + TypeScript + DevExtreme)
+  ─────────────────────────────────────────
+  - "npm install" → ✅ SELESAI
+  - Folder node_modules/ sudah ada dan lengkap.
+  - "npm run dev" → ✅ BERHASIL (Vite dev server di http://localhost:5173)
+  - [SESI 3] ✅ SOLVED PRIORITY 1 — Form Rendering Dinamis Berdasarkan Battery:
+    → Refactor file cos-validation.tsx:
+      ├─ Import getFormDefinitionById dari cos-api.ts.
+      ├─ Fungsi baru: handleBatteryTypeChange(slotIdx, batteryName)
+      │   → Mendeteksi apakah battery yang dipilih punya formId berbeda.
+      │   → Jika berbeda: fetch FormDefinition baru via GET /api/formdefinition/{id}.
+      │   → Reset state: formDef, batterySlots, settings, problems, signatures.
+      ├─ SelectBox dropdown battery sekarang memanggil handleBatteryTypeChange
+      │   (bukan lagi updateSlot langsung).
+      └─ BatteryTypeDto di cos-api.ts ditambahkan property: formId?: number | null.
+    → Hasil Verifikasi (tested):
+      ├─ Pilih "80D26L0 - MF00 (TJGS)" → Form berubah ke "BATTERY ELEMENT AMB ASSY./ PROD. II" ✅
+      ├─ 12 check items baru muncul (Temp Pot, Temp Pipe, dll) ✅
+      ├─ Standar min/max tampil benar (460-480, 425-445, dll) ✅
+      └─ Switch kembali ke battery lain → Form kembali ke "VALIDASI PROSES COS" ✅
+
+  ✅ Konfigurasi
+  ─────────────────────────────────────────
+  - File appsettings.json sudah diupdate dengan connection string SQL Server.
+  - File appsettings.Development.json sudah dicek.
+  - CORS sudah dikonfigurasi di Program.cs untuk port 5173, 5174, 5175, 3000.
+  - [SESI 3] Fix Vite Proxy: Target diubah dari port 5000 → 5131 di vite.config.ts.
+    → Port 5131 sesuai dengan output "dotnet run" (dari launchSettings.json).
+    → Tanpa fix ini, semua API call dari frontend akan gagal (connection refused).
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 2. PENDING TASKS (⚠️ TODO BESOK)
+════════════════════════════════════════════════════════════════════════════════
+
+  ✅  [PRIORITAS 1] SOLVED — Form Rendering Dinamis (Sesi 3, 2026-02-15)
+  ─────────────────────────────────────────
+  - ISU LAMA: Saat user memilih Battery ID 336 (Data baru) di dropdown, UI Form TIDAK BERUBAH / Tidak me-render form baru.
+  - ROOT CAUSE DITEMUKAN (3 gap arsitektur):
+    1. Database: cos_battery_types TIDAK PUNYA kolom form_id → tidak ada link battery↔form.
+    2. Frontend: formDef di-load 1x saat mount dengan hardcode formCode='COS_VALIDATION',
+       tidak pernah di-fetch ulang saat battery berubah.
+    3. Frontend: updateSlot() hanya mengubah nama battery di state, tidak mendeteksi
+       bahwa battery baru butuh form yang berbeda.
+  - SOLUSI DITERAPKAN:
+    1. Tambah kolom FormId (FK, nullable) ke cos_battery_types + migration.
+    2. Data patch: Battery 336 → FormId=2, sisanya → FormId=1.
+    3. Frontend: handleBatteryTypeChange() mendeteksi formId berbeda → fetch form baru → reset state.
+  - STATUS: ✅ VERIFIED & WORKING.
+
+  ⚠️  [PRIORITAS 2] Frontend Run
+  ─────────────────────────────────────────
+  - Jalankan frontend dengan "npm run dev" di folder frontend/.
+  - Pastikan Vite dev server berjalan (biasanya di http://localhost:5173).
+  - Cek browser: apakah halaman Vue bisa terbuka tanpa error.
+  - Cek console browser (F12 → Console): pastikan tidak ada error CORS 
+    atau network error saat memanggil API backend.
+
+  ⚠️  [PRIORITAS 3] Integration Test (Frontend ↔ Backend)
+  ─────────────────────────────────────────
+  - Buka aplikasi di browser, navigasi ke halaman yang menampilkan data.
+  - Pastikan data dari database SQL Server berhasil ditampilkan di frontend.
+  - Cek Network tab (F12 → Network): pastikan request ke API backend 
+    mendapat response 200 OK, bukan 404 atau 500.
+  - Khusus dropdown battery type: pastikan data yang muncul sudah 
+    sesuai dengan hasil sync dari tlkp_item.
+
+  ⚠️  [PRIORITAS 4] Cek Konfigurasi Proxy Vite (Jika Ada Masalah Koneksi)
+  ─────────────────────────────────────────
+  - Jika frontend tidak bisa connect ke backend, periksa file:
+    → frontend/vite.config.ts  (cek apakah ada proxy configuration)
+  - Pastikan proxy mengarah ke port yang benar sesuai output "dotnet run".
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 3. TECHNICAL NOTES (⚙️ PENTING — JANGAN DIHAPUS)
+════════════════════════════════════════════════════════════════════════════════
+
+  📦 Database Credentials
+  ─────────────────────────────────────────
+  Server   : ADAM123\SQLEXPRESS
+  Database : db_master_data
+  User     : sa
+  Password : 07Mei2005
+  Provider : Microsoft.EntityFrameworkCore.SqlServer 8.0.10
+
+  Connection String (sudah ada di appsettings.json):
+  "Server=ADAM123\\SQLEXPRESS;Database=db_master_data;User Id=sa;Password=07Mei2005;TrustServerCertificate=True;Encrypt=False;"
+
+  ⚙️  SQL Server Compatibility Level
+  ─────────────────────────────────────────
+  - UseCompatibilityLevel(120) aktif di Program.cs
+  - Level 120 = SQL Server 2014 mode
+  - Efek: EF Core TIDAK akan generate query OPENJSON
+  - JANGAN ubah ke level yang lebih tinggi kecuali SQL Server di-upgrade
+
+  🔄 Background Service: BatteryTypeSyncService
+  ─────────────────────────────────────────
+  - File: backend/Services/BatteryTypeSyncService.cs
+  - Behavior: 
+    → Berjalan otomatis 1x saat Startup (langsung sync)
+    → Kemudian looping setiap 30 menit (Task.Delay 30 min)
+  - Dependency: IServiceScopeFactory (untuk membuat scope DbContext 
+    di dalam Singleton BackgroundService)
+  - Error Handling: try-catch per-item di dalam loop. Jika satu item 
+    gagal di-parse, item lainnya tetap diproses.
+  - Logging: Output ke ILogger — terlihat di terminal saat dotnet run
+  - [SESI 3] Update: Battery baru yang di-sync sekarang mendapat FormId = 1 (default).
+
+  🔗 Form Linking Strategy (BARU — Sesi 3)
+  ─────────────────────────────────────────
+  - Mapping Form TIDAK LAGI hardcode di frontend.
+  - Flow: BatteryType → punya FormId → load FormDefinition + CheckItems dari API.
+  - Tabel Mapping Saat Ini:
+    ├─ FormId = 1 → Code: COS_VALIDATION → "VALIDASI PROSES COS" (form lama, default)
+    ├─ FormId = 2 → Code: FORM_COS_MF   → "BATTERY ELEMENT AMB ASSY./ PROD. II" (form baru)
+    └─ FormId = NULL → Akan di-treat sebagai form lama (backward compatible).
+  - PENTING: Jika ada Battery Type BARU yang butuh form khusus, WAJIB:
+    1. Buat FormDefinition baru (via Admin Panel atau SQL INSERT).
+    2. UPDATE cos_battery_types SET form_id = <ID_BARU> WHERE id = <BATTERY_ID>.
+  - Sync Service (BatteryTypeSyncService) otomatis set FormId = 1 untuk battery baru.
+    Jika battery baru butuh form khusus, harus di-patch manual setelah sync.
+
+  🚀 Quick Start Commands (PowerShell / VS Code Terminal)
+  ─────────────────────────────────────────
+
+  Terminal #1 — Backend:
+    cd backend
+    dotnet run
+
+  Terminal #2 — Frontend:
+    cd frontend
+    npm run dev
+
+  🔧 Useful Commands (Jika Dibutuhkan)
+  ─────────────────────────────────────────
+  Build backend         : cd backend && dotnet build
+  Restore packages      : cd backend && dotnet restore
+  Add new migration     : cd backend && dotnet ef migrations add <NamaMigration>
+  Update database       : cd backend && dotnet ef database update
+  Install frontend deps : cd frontend && npm install
+
+  📁 File-File Penting
+  ─────────────────────────────────────────
+  Backend Entry Point   : backend/Program.cs
+  DB Context            : backend/Data/FormCosDbContext.cs
+  Backend Config        : backend/appsettings.json
+  Sync Service          : backend/Services/BatteryTypeSyncService.cs
+  Legacy Entity         : backend/Models/TlkpItem.cs
+  Battery Entity        : backend/Models/BatteryType.cs
+  Frontend Entry        : frontend/index.html
+  Frontend API Layer    : frontend/src/api/cos-api.ts
+  Vite Config           : frontend/vite.config.ts
+  SQL Schema Reference  : cos-tables-sqlserver.sql
+  DB Schema Diagram     : schema-dbdiagram.dbml
+  Migration Guide       : PANDUAN-MIGRASI-SQL-SERVER.md
+
+  ⚠️  Catatan Khusus
+  ─────────────────────────────────────────
+  - JANGAN jalankan build-and-run.sh — itu untuk Linux/Mac.
+  - Program.cs memiliki auto-migrate on startup (db.Database.Migrate()),
+    jadi setiap kali backend dijalankan, migration otomatis di-apply.
+  - CORS sudah dikonfigurasi untuk localhost:5173 (default Vite).
+  - Fallback route ke index.html sudah ada (SPA support).
+  - BatteryTypeSyncService akan sync otomatis saat startup — jika 
+    tabel tlkp_item belum ada atau kosong, service akan log warning 
+    dan tidak crash.
+  - Arsitektur keputusan: Menggunakan OPSI B (Synchronization/Data Mapping)
+    bukan Direct Access ke legacy table. Alasannya:
+    → Zero breaking changes pada FK cos_battery_standards
+    → Parsing logic terisolasi di sync service
+    → Performance dropdown tetap optimal (query integer PK)
+
+  📊 Migration History
+  ─────────────────────────────────────────
+  1. InitialCreate                      → ✅ Applied (schema awal SQL Server)
+  2. AddSourceItemNumToBatteryType       → ✅ Applied (kolom SourceItemNum + KatId)
+  3. AddFormIdFkToBatteryType            → ✅ Applied (kolom FormId FK → cos_form_definitions)
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 4. MERGE ARCHITECTURE ANALYSIS (MY WORK vs. FRIEND'S WORK)
+    Date: 2026-02-15 (Sesi 4 — Git Merge Resolution)
+    Branch: uji_coba ← friend-repo/main (--allow-unrelated-histories)
+    Strategy: "Backend Dictatorship" — Backend milik kita TIDAK BISA DIGANTI.
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  RINGKASAN CEPAT                                                       │
+  │                                                                         │
+  │  Total file conflict  : 135 files                                      │
+  │  Resolved via --ours  : 124 files (backend + build-and-run.sh)         │
+  │  Resolved via --theirs:   9 files (frontend UI/CSS)                    │
+  │  Manual merge         :   2 files (cos-api.ts + cos-validation.tsx)    │
+  │  MySQL migrations     :  10 files DIHAPUS (post-merge cleanup)         │
+  │  Final git status     : CLEAN — 0 conflicts, 0 markers                │
+  │  Build result         : ✅ Backend 0 errors, ✅ Frontend 0 errors      │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+  A. THE CORE — MY CONTRIBUTION (Backend Lead / "Otak Sistem")
+  ═══════════════════════════════════════════════════════════════
+
+  Layer ini adalah OTAK dari seluruh sistem. Semua business logic, data 
+  processing, dan database interaction berjalan di sini. Tanpa layer ini,
+  frontend hanyalah tampilan kosong tanpa data.
+
+  📁 Files (KEEP OURS — git checkout --ours):
+  ─────────────────────────────────────────
+  - backend/                              → Seluruh folder backend (123 files)
+  - build-and-run.sh                      → Script deployment
+  - frontend/vite.config.ts               → Proxy port 5131 (sudah diperbaiki)
+
+  🔧 Fitur Backend Vital yang Dipertahankan:
+  ─────────────────────────────────────────
+
+  1. SQL Server Configuration (Program.cs + appsettings.json)
+     ├─ Provider: Microsoft.EntityFrameworkCore.SqlServer 8.0.10
+     ├─ Connection: ADAM123\SQLEXPRESS → db_master_data
+     ├─ UseCompatibilityLevel(120) → mencegah error OPENJSON
+     └─ CORS: WithOrigins localhost:5173/5174/5175/3000
+
+  2. BatteryTypeSyncService (Services/BatteryTypeSyncService.cs)
+     ├─ BackgroundService: auto-sync saat startup + loop 30 menit
+     ├─ Parsing logic: tlkp_item → cos_battery_types (format baru)
+     ├─ Filter: Index[1][0]='A', Index[1][2]='U' → 2048 dari 11751 items
+     ├─ Anti-duplikasi: HashSet<string> case-insensitive
+     └─ Default FormId = 1 untuk battery baru (COS_VALIDATION)
+
+  3. FormId Linking (Models/CosModels.cs + Controllers/BatteryController.cs)
+     ├─ CosBatteryType.FormId → FK nullable ke cos_form_definitions
+     ├─ API: GET /api/battery/types → return formId di JSON response
+     ├─ API: GET /api/formdefinition/{id} → fetch form definition by ID
+     └─ Mapping: FormId=1 → COS_VALIDATION, FormId=2 → FORM_COS_MF
+
+  4. Controllers yang Sudah Di-optimize:
+     ├─ BatteryController.cs    → Types, Lines, Shifts, Molds (include Standards)
+     ├─ FormDefinitionController.cs → GetByCode, GetById (include CheckItems/Problems/Signatures)
+     ├─ FormSubmissionController.cs → CRUD submissions + approval workflow
+     ├─ PersonnelController.cs  → Operators, Leaders, Kasubsie, Kasie, Hierarchy
+     ├─ AdminController.cs      → Admin CRUD untuk check items, battery types, standards
+     └─ EmployeeSignatureController.cs → Persistent signature per employee
+
+  5. Database Migrations (SQL Server Only):
+     ├─ InitialCreate                → Schema awal
+     ├─ AddSourceItemNumToBatteryType → Kolom SourceItemNum + KatId
+     ├─ AddFormIdToBatteryType       → Kolom FormId (step 1)
+     └─ AddFormIdFkToBatteryType     → FK constraint FormId → cos_form_definitions
+
+
+  B. THE SHELL — FRIEND'S CONTRIBUTION (Frontend Lead / "Wajah Sistem")
+  ═══════════════════════════════════════════════════════════════
+
+  Layer ini adalah WAJAH dari sistem — semua yang user lihat dan sentuh.
+  Teman saya fokus pada UX/UI, form protection, dan approval workflow di sisi
+  tampilan. Kontribusinya melengkapi backend saya dengan interaksi visual.
+
+  📁 Files (ACCEPT THEIRS — git checkout --theirs):
+  ─────────────────────────────────────────
+  - frontend/src/App.tsx                           → Root app + routing
+  - frontend/src/components/signature-pad/*        → Komponen tanda tangan (2 files)
+  - frontend/src/pages/admin/admin-layout.tsx       → Layout admin panel
+  - frontend/src/pages/admin/admin-layout.scss      → Styling admin panel
+  - frontend/src/pages/admin/submission-list.tsx    → Daftar submission
+  - frontend/src/pages/admin/submission-response.tsx → Detail/approve submission
+  - frontend/src/pages/admin/submission-response.scss → Styling response
+  - frontend/src/pages/cos-validation/cos-validation.scss → Styling form utama
+
+  🎨 Fitur Frontend dari Teman yang Diadopsi:
+  ─────────────────────────────────────────
+
+  1. Form Protection (Mencegah Data Hilang)
+     ├─ useBlocker (react-router-dom) → Block navigasi saat form dirty
+     ├─ window.beforeunload → Warn saat close/refresh tab
+     └─ sessionStorage auto-save → Draft tersimpan otomatis (debounce 400ms)
+
+  2. Chain Select (Dropdown Berantai)
+     ├─ Pilih Line → Filter Operator & Battery Types untuk line tersebut
+     ├─ Pilih Operator → Auto-fetch hierarchy (Leader, Kasubsie, Kasie)
+     └─ Operator disabled jika Line belum dipilih
+
+  3. NG Warning System
+     ├─ dxCustomDialog → Konfirmasi "Ada item NG, yakin submit?"
+     ├─ dxNotify → Toast notification sukses/gagal
+     └─ SCW Warning → "Lakukan SCW (Stop Call Wait)!" jika ada NG
+
+  4. Clear Form
+     ├─ Tombol "Clear Form" → Reset semua state ke default
+     └─ Hapus draft dari sessionStorage
+
+  5. Signature Display-Only
+     ├─ Operator → SignaturePad aktif (bisa tanda tangan)
+     └─ Leader/Kasubsie/Kasie → Display-only (nama saja, tanda tangan via approval)
+
+  6. Admin Panel UI
+     ├─ Submission List → Tabel daftar semua submission
+     ├─ Submission Response → Detail view + approve/reject per role
+     └─ Admin Layout → Sidebar navigation
+
+  7. API Endpoints Tambahan dari Teman (yang kita adopsi):
+     ├─ GET  /api/personnel/operators?lineId=X → Filter operator per line
+     ├─ GET  /api/battery/types?lineId=X       → Filter battery types per line
+     ├─ GET  /api/personnel/hierarchy/{empId}   → Auto-fetch atasan
+     ├─ PUT  /api/formsubmission/{id}/approve   → Approval workflow
+     ├─ GET  /api/employeesignature/{empId}      → Persistent signature
+     └─ PUT  /api/employeesignature/{empId}      → Save signature
+
+
+  C. THE HYBRID RESULT — How it Works Together
+  ═══════════════════════════════════════════════════════════════
+
+  Frontend teman saya sekarang berbicara langsung dengan Backend SQL Server saya
+  melalui Vite proxy (localhost:5173 → localhost:5131). Berikut flow integrasinya:
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                        DATA FLOW ARCHITECTURE                          │
+  │                                                                         │
+  │  [Browser localhost:5173]                                               │
+  │       │                                                                 │
+  │       ├─ User pilih LINE (UI: Teman)                                    │
+  │       │   └─→ GET /api/battery/types?lineId=X (Backend: Saya)          │
+  │       │   └─→ GET /api/personnel/operators?lineId=X (Backend: Saya)    │
+  │       │                                                                 │
+  │       ├─ User pilih BATTERY TYPE (UI: Teman)                            │
+  │       │   └─→ handleBatteryTypeChange() (Logic: Saya)                  │
+  │       │   └─→ Cek formId dari BatteryTypeDto (Data: Saya)              │
+  │       │   └─→ Jika formId berbeda:                                     │
+  │       │       └─→ GET /api/formdefinition/{id} (Backend: Saya)         │
+  │       │       └─→ Re-render form baru (UI: Teman + Logic: Saya)        │
+  │       │                                                                 │
+  │       ├─ User isi CHECK ITEMS (UI: Teman)                              │
+  │       │   └─→ Validasi min/max dari BatteryStandard (Data: Saya)       │
+  │       │   └─→ Visual OK/NG toggle (UI: Teman)                         │
+  │       │   └─→ Out-of-range highlight merah (Logic: Saya)               │
+  │       │                                                                 │
+  │       ├─ User klik SUBMIT (UI: Teman + Logic: Gabungan)                │
+  │       │   └─→ Cek ada NG? → dxCustomDialog warning (UI: Teman)        │
+  │       │   └─→ POST /api/formsubmission (Backend: Saya)                 │
+  │       │   └─→ dxNotify sukses/gagal (UI: Teman)                        │
+  │       │   └─→ SCW warning jika NG (UI: Teman)                         │
+  │       │                                                                 │
+  │       └─ Auto-save draft ke sessionStorage (Logic: Teman)              │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  Contoh Interaksi Nyata:
+  ─────────────────────────────────────────
+  1. User buka halaman → Form COS_VALIDATION di-load via API saya.
+  2. User pilih Line "COS-2" → Dropdown battery & operator difilter (API saya, UI teman).
+  3. User pilih "80D26L0 - MF00 (TJGS)" → formId=2 terdeteksi (data saya),
+     form di-switch ke "BATTERY ELEMENT AMB ASSY./ PROD. II" (logic saya, render teman).
+  4. User isi temperature 450 (di bawah min 460) → Highlight merah (logic saya, CSS teman).
+  5. User submit dengan item NG → Dialog warning muncul (UI teman), data tersimpan ke
+     SQL Server (backend saya).
+
+
+  D. DISCARDED ELEMENTS — What We Threw Away
+  ═══════════════════════════════════════════════════════════════
+
+  ❌ DITOLAK: Seluruh Konfigurasi MySQL/Pomelo dari Repo Teman
+  ─────────────────────────────────────────
+
+  Teman saya mengembangkan backend-nya menggunakan MySQL (Pomelo provider).
+  Seluruh konfigurasi dan migration MySQL-nya DIBUANG karena:
+
+  1. Kita sudah bermigrasi ke SQL Server sejak Sesi 1.
+  2. Package Pomelo.EntityFrameworkCore.MySql sudah dihapus dari .csproj.
+  3. Semua migration files MySQL menggunakan sintaks yang tidak kompatibel:
+     - MySqlModelBuilderExtensions (tidak ada di SQL Server provider)
+     - MySqlPropertyBuilderExtensions (tidak ada di SQL Server provider)
+     - Migration naming berbeda (MySQL auto-increment vs SQL Server identity)
+
+  📁 Migration Files MySQL yang DIHAPUS (10 files):
+  ─────────────────────────────────────────
+  ❌ 20260210033936_MasterDataIntegration.cs          (+Designer.cs)
+  ❌ 20260211015021_AddEmployeeSignatures.cs           (+Designer.cs)
+  ❌ 20260212012840_AddApprovalWorkflow.cs              (+Designer.cs)
+  ❌ 20260212031337_AddLineBatteryTypeMapping.cs        (+Designer.cs)
+  ❌ 20260212034143_AddGroupIdToSubmission.cs           (+Designer.cs)
+
+  ALASAN: File-file ini menyebabkan 163 BUILD ERRORS saat dotnet build.
+  Tanpa menghapusnya, backend TIDAK BISA dikompilasi sama sekali.
+
+  ⚠️ CATATAN PENTING:
+  Fitur-fitur yang di-create oleh migration teman (EmployeeSignatures,
+  ApprovalWorkflow, LineBatteryTypeMapping, GroupId) SUDAH ADA di backend
+  kita melalui migration kita sendiri (InitialCreate + updates).
+  Jadi TIDAK ADA fitur yang hilang — hanya migration MySQL yang dibuang.
+
+
+  E. GIT COMMIT LOG (Branch: uji_coba)
+  ═══════════════════════════════════════════════════════════════
+
+  Commit 1: ecd6f93
+    Message: "merge: integrate friend frontend with Backend Dictatorship strategy"
+    → Menyelesaikan semua 135 file conflict
+    → Manual merge cos-api.ts + cos-validation.tsx
+
+  Commit 2: 6da3fe5
+    Message: "cleanup: remove MySQL migration files from friend's repo that broke dotnet build"
+    → Hapus 10 migration files MySQL
+    → 33 files changed, 19579 deletions
+
+  Commit 3: 80caf87
+    Message: "cleanup: remove temporary test files"
+    → Hapus api_test.json, formdef_test.json
+
+
+  F. PORT CONFIGURATION (Verified & Synced)
+  ═══════════════════════════════════════════════════════════════
+
+  ┌──────────────┬─────────────────────────┬──────────────────────────────┐
+  │ Komponen     │ URL                     │ File Konfigurasi             │
+  ├──────────────┼─────────────────────────┼──────────────────────────────┤
+  │ Backend API  │ http://localhost:5131    │ launchSettings.json (http)   │
+  │ Frontend UI  │ http://localhost:5173    │ Vite default                 │
+  │ Vite Proxy   │ /api → localhost:5131   │ vite.config.ts               │
+  │ CORS Allowed │ localhost:5173/5174/3000 │ Program.cs                   │
+  └──────────────┴─────────────────────────┴──────────────────────────────┘
+
+  BUKA DI BROWSER: http://localhost:5173/cos-validation
+  (JANGAN buka localhost:5131 — itu hanya API server)
+
+
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 5. LEADER MEMO UI — TABBED INTERFACE (Sesi 5 — 2026-02-16)
+    Fitur baru: Memo Leader dengan Upload File & Ambil Foto
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  RINGKASAN CEPAT                                                       │
+  │                                                                         │
+  │  Scope     : Leader approval page (submission-response.tsx)            │
+  │  Perubahan : 4 files (1 backend, 3 frontend)                           │
+  │  Build     : ✅ Backend 0 errors, ✅ Frontend TypeScript 0 errors      │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  📝 APA YANG BERUBAH:
+  ─────────────────────────────────────────
+  Tampilan memo Leader di halaman approval (submission-response.tsx) diganti
+  dari textarea biasa menjadi interface TAB dengan 2 opsi input:
+
+    Tab 1: 📁 Upload File — drag-and-drop atau klik untuk upload dokumen/foto.
+    Tab 2: 📷 Ambil Foto  — akses kamera perangkat, capture foto langsung.
+
+  Setelah upload, file muncul di daftar "File Terlampir" dengan preview dan
+  tombol hapus. Textarea "Catatan Tambahan" tetap ada tapi opsional.
+
+  PENTING: UI tabbed ini HANYA tampil untuk role 'leader'.
+           Role 'kasubsie' dan 'kasie' tetap pakai textarea biasa.
+
+  📁 FILES YANG DIUBAH:
+  ─────────────────────────────────────────
+
+  1. frontend/src/pages/admin/submission-response.tsx
+     ├─ Import baru: useRef, uploadMemoFile, deleteAttachment, AttachmentDto
+     ├─ State baru: leaderMemoTab, memoAttachments, uploading, cameraActive,
+     │   cameraStream, videoRef, canvasRef, fileInputRef
+     ├─ Handler baru: handleMemoFileUpload, handleDeleteAttachment,
+     │   startCamera, stopCamera, capturePhoto
+     ├─ JSX: Tab buttons + Upload area + Camera preview + Attachment list
+     └─ handleApprove: Validasi NG → wajib memo/file, + stopCamera() cleanup
+
+  2. frontend/src/api/cos-api.ts
+     ├─ Type baru: AttachmentDto (id, fileName, filePath, contentType, uploadedAt)
+     ├─ Function: uploadMemoFile(submissionId, role, file) → POST FormData
+     └─ Function: deleteAttachment(attachmentId) → DELETE
+
+  3. frontend/src/pages/admin/submission-response.scss
+     ├─ Styles: .leader-memo-section, .memo-tabs, .memo-tab, .memo-tab-content
+     ├─ Styles: .upload-area (drag-over), .camera-preview, .camera-controls
+     ├─ Styles: .memo-attachments, .attachment-card, .attachment-delete
+     └─ Animation: @keyframes pulse (upload progress)
+
+  4. backend/Controllers/FormSubmissionController.cs
+     └─ Endpoint baru: DELETE /api/formsubmission/attachment/{attachmentId}
+        → Hapus file fisik dari wwwroot + hapus record dari DB
+
+  🔗 API ENDPOINTS TERKAIT:
+  ─────────────────────────────────────────
+  POST   /api/formsubmission/{id}/upload-memo  → Upload file/foto ke server
+  DELETE /api/formsubmission/attachment/{id}    → Hapus attachment (file + DB)
+
+  Files disimpan ke: wwwroot/uploads/memos/
+  Metadata disimpan ke tabel: cos_approval_attachments
+
+  ✅ Validasi Business Logic:
+  ─────────────────────────────────────────
+  - Jika ada item NG: Leader WAJIB isi memo text ATAU upload minimal 1 file.
+  - Jika tidak ada NG: Memo/upload opsional.
+  - Tanda tangan (signature) tetap WAJIB untuk semua role.
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 6. DATABASE SPLIT BLUEPRINT (Sesi 6 — 2026-02-16)
+    Mission: Pisahkan db_master_data → 2 database terpisah
+    Status : ✅ STEP 1 (Classification) COMPLETE & APPROVED
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  ⚠️  SOURCE OF TRUTH                                                   │
+  │                                                                         │
+  │  File: klarifikasi.txt (root project)                                  │
+  │  Status: APPROVED / VALID (verified manual oleh USER, 2026-02-16)      │
+  │                                                                         │
+  │  File ini adalah SATU-SATUNYA REFERENSI KEBENARAN untuk seluruh        │
+  │  proses pemisahan database. Semua keputusan rename tabel dan           │
+  │  penempatan database HARUS mengacu ke file ini.                        │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+  📋 ATURAN PEMISAHAN (MAPPING RULES):
+  ─────────────────────────────────────────
+
+  ┌────────┬──────────────────────┬───────────────────┬─────────────────────┐
+  │ Group  │ Database Target      │ Prefix Rule       │ Kriteria            │
+  ├────────┼──────────────────────┼───────────────────┼─────────────────────┤
+  │ A      │ db_master_data       │ Tidak berubah     │ Tabel TANPA prefix  │
+  │        │ (tetap di sini)      │ (tlkp_*, VIEW_*)  │ "cos_"              │
+  ├────────┼──────────────────────┼───────────────────┼─────────────────────┤
+  │ B      │ db_cos_checksheet    │ cos_ → tlkp_cos_  │ Tabel "cos_" yang   │
+  │        │ (pindah, MASTER)     │                   │ isinya data statis/ │
+  │        │                      │                   │ referensi/definisi  │
+  ├────────┼──────────────────────┼───────────────────┼─────────────────────┤
+  │ C      │ db_cos_checksheet    │ cos_ → t_cos_     │ Tabel "cos_" yang   │
+  │        │ (pindah, TRANSAKSI)  │                   │ isinya data input   │
+  │        │                      │                   │ user/transaksi      │
+  └────────┴──────────────────────┴───────────────────┴─────────────────────┘
+
+  📊 JUMLAH TABEL PER GROUP:
+  ─────────────────────────────────────────
+
+  Group A (db_master_data)     : 19 tabel/view  → TIDAK BERUBAH
+  Group B (db_cos_checksheet)  :  8 tabel       → Rename cos_ → tlkp_cos_
+  Group C (db_cos_checksheet)  :  5 tabel       → Rename cos_ → t_cos_
+  ─────────────────────────────────────────
+  TOTAL                        : 32 tabel
+
+  📑 DETAIL MAPPING (ringkasan — detail lengkap di klarifikasi.txt):
+  ─────────────────────────────────────────
+
+  GROUP A (Stay in db_master_data):
+    tlkp_plant, tlkp_divisi, tlkp_departemen, tlkp_section, tlkp_line,
+    tlkp_group, tlkp_shift, tlkp_lineGroup, tlkp_operator, tlkp_userKasie,
+    tlkp_user, tlkp_item, tlkp_kategori, tlkp_series, tlkp_mold,
+    tlkp_moldtype, tlkp_job, VIEW_DATAAUTH, VIEW_EMPLOYEE
+
+  GROUP B (Move → db_cos_checksheet, prefix tlkp_cos_):
+    cos_form_definitions     → tlkp_cos_form_definitions
+    cos_check_items          → tlkp_cos_check_items
+    cos_check_sub_rows       → tlkp_cos_check_sub_rows
+    cos_battery_types        → tlkp_cos_battery_types
+    cos_battery_standards    → tlkp_cos_battery_standards
+    cos_problem_columns      → tlkp_cos_problem_columns
+    cos_signature_slots      → tlkp_cos_signature_slots
+    cos_employee_signatures  → tlkp_cos_employee_signatures
+
+  GROUP C (Move → db_cos_checksheet, prefix t_cos_):
+    cos_submissions          → t_cos_submissions
+    cos_check_values         → t_cos_check_values
+    cos_problems             → t_cos_problems
+    cos_signature_entries    → t_cos_signature_entries
+    cos_approval_attachments → t_cos_approval_attachments
+
+  ⚠️  CROSS-DATABASE REFERENCES (perlu handling di application level):
+  ─────────────────────────────────────────
+    - t_cos_submissions.line_id          → db_master_data.tlkp_line
+    - t_cos_submissions.shift_id         → db_master_data.tlkp_shift
+    - t_cos_submissions.operator_emp_id  → db_master_data.VIEW_DATAAUTH
+    - t_cos_submissions.leader_emp_id    → db_master_data.VIEW_DATAAUTH
+    - t_cos_submissions.kasubsie_emp_id  → db_master_data.VIEW_DATAAUTH
+    - t_cos_submissions.kasie_emp_id     → db_master_data.VIEW_DATAAUTH
+    - tlkp_cos_battery_types.kat_id      → db_master_data.tlkp_kategori
+    - tlkp_cos_employee_signatures.emp_id→ db_master_data.VIEW_DATAAUTH
+
+  🔜 NEXT STEPS (belum dikerjakan):
+  ─────────────────────────────────────────
+    Step 2: Implementasi kode — Split DbContext menjadi 2:
+            ├─ MasterDataDbContext    → db_master_data (Group A)
+            └─ CosChecksheetDbContext → db_cos_checksheet (Group B + C)
+    Step 3: Update connection strings di appsettings.json
+    Step 4: Rename [Table("...")] attributes di Models sesuai mapping
+    Step 5: Generate migration baru untuk db_cos_checksheet
+    Step 6: Update seed data, controllers, dan services
+    Step 7: Testing end-to-end
+
+
+  📊 Migration History (updated):
+  ─────────────────────────────────────────
+  1. InitialCreate                           → ✅ Applied
+  2. AddSourceItemNumToBatteryType           → ✅ Applied
+  3. AddFormIdFkToBatteryType                → ✅ Applied
+  4. AddSubmissionStatusAndLeaderMemo        → ✅ Applied (approval workflow + leader memo)
+  5. [PENDING] DatabaseSplit                 → ⏳ Menunggu eksekusi Step 2-7
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 7. DATABASE SPLIT IMPLEMENTATION + FULL-STACK AUTH (Sesi 7 — 2026-02-17)
+    Mission 1: Implementasi pemisahan database (lanjutan Sesi 6)
+    Mission 2: Implementasi sistem autentikasi lengkap (Login → Role Routing)
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  RINGKASAN CEPAT                                                       │
+  │                                                                         │
+  │  Scope     : Backend (Controllers, Models, DbContext, SQL Scripts)     │
+  │              Frontend (Login Page, Auth Context, Routing, Logout)      │
+  │  Files     : 10+ files created/modified                                │
+  │  Build     : ✅ Backend 0 errors, ✅ Frontend TypeScript 0 errors      │
+  │              ✅ Vite Build 0 errors                                    │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+  ─────────────────────────────────────────
+  A. DATABASE SPLIT IMPLEMENTATION (Step 2-6 dari Blueprint Sesi 6)
+  ─────────────────────────────────────────
+
+  ✅ DbContext Split
+  ─────────────────────────────────────────
+  - SEBELUM: Satu FormCosDbContext menangani semua tabel.
+  - SESUDAH: Dua DbContext terpisah:
+    ├─ MasterDbContext    → db_master_data (Group A: 19 tabel/view)
+    └─ CosDbContext       → db_cos_checksheet (Group B + C: 13 tabel)
+  - File: backend/Data/MasterDbContext.cs (BARU)
+  - File: backend/Data/CosDbContext.cs (BARU, menggantikan FormCosDbContext)
+  - Registrasi di Program.cs dengan 2 connection string terpisah.
+
+  ✅ Model Updates
+  ─────────────────────────────────────────
+  - CosModels.cs: Semua [Table("...")] attribute diupdate sesuai mapping:
+    ├─ Group B: cos_* → tlkp_cos_* (8 tabel master/lookup)
+    └─ Group C: cos_* → t_cos_* (5 tabel transaksi)
+  - MasterData.cs: ViewDataAuth model dipulihkan ke schema lengkap (63 kolom).
+    ├─ Sebelumnya hanya 11 kolom (tidak lengkap).
+    └─ Sekarang match persis dengan CREATE TABLE di SQL Server.
+
+  ✅ Connection String (appsettings.json)
+  ─────────────────────────────────────────
+  - DITAMBAHKAN: "CosChecksheetConnection" untuk db_cos_checksheet
+  - Server: ADAM123\SQLEXPRESS, sa/07Mei2005
+
+  ✅ Controller Updates
+  ─────────────────────────────────────────
+  - BatteryController.cs    → Menggunakan CosDbContext
+  - FormSubmissionController.cs → Menggunakan CosDbContext + MasterDbContext
+  - AdminController.cs      → Menggunakan CosDbContext + MasterDbContext
+  - PersonnelController.cs  → Menggunakan MasterDbContext
+
+  ✅ Service Updates
+  ─────────────────────────────────────────
+  - BatteryTypeSyncService.cs → Menggunakan kedua DbContext
+    (baca dari MasterDbContext.TlkpItems, tulis ke CosDbContext.CosBatteryTypes)
+
+  ✅ SQL Migration Script
+  ─────────────────────────────────────────
+  - File: MigrationScript.sql (BARU, di root project)
+  - Konten: Script manual untuk migrasi data (bukan EF Core migration)
+    ├─ Section 1: CREATE DATABASE db_cos_checksheet
+    ├─ Section 2: Copy data (SELECT INTO) + re-create PK/FK/Index
+    ├─ Section 3: Verification queries (row count comparison)
+    └─ Section 4: Cleanup (DROP TABLE, commented out — safety first)
+
+  ✅ RestoreViewDataAuth.sql (BARU)
+  ─────────────────────────────────────────
+  - Script idempoten untuk menambahkan kolom yang hilang di VIEW_DATAAUTH.
+  - Menggunakan IF NOT EXISTS checks.
+  - Verifikasi: memastikan 63 kolom hadir setelah eksekusi.
+
+
+  ─────────────────────────────────────────
+  B. FULL-STACK AUTHENTICATION SYSTEM
+  ─────────────────────────────────────────
+
+  ✅ Backend: AuthController.cs (BARU)
+  ─────────────────────────────────────────
+  - File: backend/Controllers/AuthController.cs
+  - POST /api/auth/login
+    ├─ Input: { username (Full_Name), password (NPK) }
+    ├─ Validasi username: cari Full_Name di VIEW_DATAAUTH
+    ├─ Validasi password: cari NPK di VIEW_EMPLOYEE (join emp_id)
+    ├─ Role Detection (prioritas tinggi ke rendah):
+    │   1. tlkp_userKasie (kasie_emp_id match) → role = "kasie"
+    │   2. tlkp_lineGroup (lgp_kasubsie match) → role = "kasubsie"
+    │   3. tlkp_lineGroup (lgp_leader match)   → role = "leader"
+    │   4. tlkp_operator + tlkp_job (jopr_name LIKE 'OP%') → role = "operator"
+    │   5. Fallback: pos_name_id dari VIEW_DATAAUTH
+    ├─ Response: { success, user: {empId, fullName, npk, role, jobName}, token }
+    └─ Token: Base64-encoded (development), placeholder untuk JWT production.
+
+  - GET /api/auth/verify
+    ├─ Input: Authorization header (Bearer token)
+    └─ Response: { success, user } — validasi token dan return user info.
+
+  ✅ Frontend: Auth Context (BARU)
+  ─────────────────────────────────────────
+  - File: frontend/src/contexts/auth-context.tsx
+  - AuthProvider component (React Context):
+    ├─ State: user, token, isLoading
+    ├─ login() → POST /api/auth/login → simpan token ke localStorage
+    ├─ logout() → hapus user + token dari state + localStorage
+    ├─ Verify on mount → GET /api/auth/verify (jika token ada di localStorage)
+    └─ useAuth() hook → akses user, token, isAuthenticated dari mana saja
+
+  ✅ Frontend: Login Page (BARU)
+  ─────────────────────────────────────────
+  - File: frontend/src/pages/login/login.tsx
+  - File: frontend/src/pages/login/login.css
+  - Desain: Dark glassmorphism premium
+    ├─ Animated background blobs (purple/blue gradients)
+    ├─ Frosted glass card (backdrop-filter blur)
+    ├─ Input: Nama Lengkap (Full_Name) + NPK (password)
+    ├─ Toggle show/hide password
+    ├─ Shake animation on error
+    ├─ Loading spinner saat verifikasi
+    ├─ Toast notification: "Selamat datang, [Name] ([Role])"
+    └─ Responsive (mobile-friendly)
+
+  ✅ Frontend: Routing Refactor (App.tsx)
+  ─────────────────────────────────────────
+  - SEBELUM: createBrowserRouter TANPA auth, default route = /
+  - SESUDAH: createBrowserRouter DENGAN Data Router + auth guards
+  - Struktur:
+    ├─ RootLayout → AuthProvider wrapper (semua route di dalamnya)
+    ├─ /login → LoginGuard (redirect ke / atau /admin jika sudah login)
+    ├─ /admin/* → RequireAuth (semua role bisa akses)
+    ├─ / → RequireAuth (COS Form page, semua role)
+    └─ * → Redirect ke /login
+
+  - PENTING: Menggunakan createBrowserRouter (Data Router) karena
+    cos-validation.tsx menggunakan useBlocker() yang WAJIB Data Router.
+    BrowserRouter (legacy) akan menyebabkan error:
+    "useBlocker must be used within a data router."
+
+  - LoginGuard: Jika sudah login → auto redirect berdasarkan role:
+    ├─ Operator → /
+    └─ Leader/Kasubsie/Kasie → /admin
+
+  ✅ Frontend: Logout Implementation
+  ─────────────────────────────────────────
+  - Lokasi: Admin sidebar footer (admin-layout.tsx)
+  - Tampilan sidebar footer:
+    ├─ User info: Nama + Role (badge warna biru)
+    ├─ ← Back to Form (link ke /)
+    └─ 🏃 Logout (tombol merah, bersih session → redirect /login)
+  - Styling: admin-layout.scss (updated footer styles)
+
+  ✅ Halaman Form (/) — Bersih Tanpa Sidebar
+  ─────────────────────────────────────────
+  - Halaman / HANYA menampilkan form COS saja (tanpa user bar/header).
+  - Navigasi ke admin panel tersedia melalui link di bawah form.
+  - Logout tersedia di /admin sidebar.
+
+
+  ─────────────────────────────────────────
+  C. DAFTAR FILE YANG DIBUAT/DIMODIFIKASI
+  ─────────────────────────────────────────
+
+  📁 FILES BARU:
+  ├─ backend/Controllers/AuthController.cs        → Login + Verify API
+  ├─ backend/Data/MasterDbContext.cs               → DbContext untuk db_master_data
+  ├─ backend/Data/CosDbContext.cs                  → DbContext untuk db_cos_checksheet
+  ├─ frontend/src/contexts/auth-context.tsx        → Auth Context + Provider + Hook
+  ├─ frontend/src/pages/login/login.tsx            → Login page component
+  ├─ frontend/src/pages/login/login.css            → Login page styles
+  ├─ MigrationScript.sql                           → SQL script migrasi database
+  └─ RestoreViewDataAuth.sql                       → SQL script restore VIEW_DATAAUTH
+
+  📝 FILES DIMODIFIKASI:
+  ├─ frontend/src/App.tsx                          → Routing refactor + auth guards
+  ├─ frontend/src/pages/admin/admin-layout.tsx     → Logout button + user info
+  ├─ frontend/src/pages/admin/admin-layout.scss    → Footer styles update
+  ├─ backend/Models/MasterData.cs                  → ViewDataAuth full schema (63 col)
+  ├─ backend/Models/CosModels.cs                   → Table name updates (tlkp_cos/t_cos)
+  ├─ backend/appsettings.json                      → CosChecksheetConnection added
+  └─ backend/Program.cs                            → Dual DbContext registration
+
+
+  ─────────────────────────────────────────
+  D. ROUTING RULES (FINAL)
+  ─────────────────────────────────────────
+
+  ┌─────────────────────────────────┬──────────────────────────────────────┐
+  │ Kondisi                         │ Hasil                                │
+  ├─────────────────────────────────┼──────────────────────────────────────┤
+  │ Belum login → akses apapun      │ → Redirect ke /login                │
+  │ Sudah login → akses /login      │ → Auto redirect berdasarkan role    │
+  │ Login sebagai Operator          │ → Default ke / (COS Form)           │
+  │ Login sebagai Leader/Kasie/etc  │ → Default ke /admin (Dashboard)     │
+  │ Semua role → akses /admin       │ → ✅ Diizinkan (tidak diblokir)     │
+  │ Semua role → akses /            │ → ✅ Diizinkan (form saja)          │
+  │ Logout (dari admin sidebar)     │ → Hapus session → redirect /login   │
+  └─────────────────────────────────┴──────────────────────────────────────┘
+
+
+  ⚠️ NEXT STEPS:
+  ─────────────────────────────────────────
+  1. Eksekusi MigrationScript.sql di SSMS (backup dulu!)
+  2. Eksekusi RestoreViewDataAuth.sql di SSMS
+  3. Test login dengan data real (Full_Name + NPK dari database)
+  4. Verifikasi role detection (Operator/Leader/Kasubsie/Kasie)
+  5. (Penting) Production: Ganti token Base64 → JWT yang proper
+
+
+════════════════════════════════════════════════════════════════════════════════
+ 8. AUTO-SELECT, SYNC REFACTOR, 3RD DATABASE & AUTO-DETECT (Sesi 8 — 2026-02-17)
+    Mission 1: Auto-Select Operator berdasarkan Login
+    Mission 2: Simplifikasi BatteryTypeSyncService
+    Mission 3: Integrasi Database Ketiga (db_padCost)
+    Mission 4: Auto-Detect Running Battery dari data produksi
+════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  RINGKASAN CEPAT                                                       │
+  │                                                                         │
+  │  Scope     : Backend (Service, Controller, Models, DbContext)          │
+  │              Frontend (cos-validation.tsx, cos-api.ts)                 │
+  │  Files     : 8 files created, 6 files modified                         │
+  │  Build     : ✅ Backend 0 errors, ✅ Frontend TypeScript 0 errors      │
+  │  Databases : db_master_data + db_cos_checksheet + db_padCost (BARU)    │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+  ─────────────────────────────────────────
+  A. AUTO-SELECT OPERATOR BERDASARKAN LOGIN
+  ─────────────────────────────────────────
+
+  ✅ Fitur: Saat user login sebagai Operator, dropdown Operator otomatis
+     terisi dengan data user dan hierarchy (Leader/Kasubsie/Kasie) auto-fetch.
+
+  📝 Perubahan di cos-validation.tsx:
+  ─────────────────────────────────────────
+  - Import: useAuth dari auth-context.tsx
+  - Hook: const { user } = useAuth()
+  - Ref: autoSelectDone = useRef(false) — guard anti-double-fire
+  - useEffect baru "Auto-Select Operator":
+    ├─ Trigger: [loading, formDef, user, operatorEmpId]
+    ├─ Guard: loading === false, formDef !== null, user.role === 'operator',
+    │         autoSelectDone.current === false
+    ├─ Action: setOperatorEmpId(user.empId)
+    ├─ Chain: getHierarchy(user.empId) → auto-fill leader/kasubsie/kasie
+    └─ Skip: Jika role !== 'operator' (leader/kasubsie/kasie pilih manual)
+
+  ✅ Bug Fix: handleLineChange Preserving Operator
+  ─────────────────────────────────────────
+  - SEBELUM: handleLineChange SELALU reset operatorEmpId, hierarchyIds,
+    hierarchyNames → menyebabkan operator/hierarchy hilang saat ganti line.
+  - SESUDAH: Cek user.role === 'operator' → SKIP reset (preserve auto-select).
+    Hanya reset jika role BUKAN operator (manual pick mode).
+  - Dependency array handleLineChange diupdate: [allBatteryTypes, user]
+
+  Alur Kerja:
+  ─────────────────────────────────────────
+    Operator login → auto-set operator + hierarchy ✅
+      → pilih Line → operator & hierarchy TETAP ✅
+      → pilih Shift → auto-detect batteries ✅
+      → ganti Line → operator & hierarchy TETAP, battery slots di-reset ✅
+
+    Leader login → operator TIDAK di-set (manual) ✅
+      → pilih Line → reset operator (karena beda line beda orang) ✅
+
+
+  ─────────────────────────────────────────
+  B. SIMPLIFIKASI BatteryTypeSyncService
+  ─────────────────────────────────────────
+
+  ✅ Refactoring: Logic parsing lama di-COMMENT OUT (diarsip), diganti logic baru.
+
+  File: backend/Services/BatteryTypeSyncService.cs
+
+  LOGIC LAMA (di-archive dalam /* ... */):
+  ─────────────────────────────────────────
+    - Split item.ItemNum menjadi 5 segment via Split('-')
+    - Filter: segments[0] === "W"
+    - Filter: segments[1][0] === 'A' && segments[1][2] === 'U'
+    - Format: "{baseName} - {suffix} ({variant})"
+    - Masalah: Terlalu ketat — banyak item valid yang di-skip
+
+  LOGIC BARU (aktif):
+  ─────────────────────────────────────────
+    - Langsung pakai item.ItemNum mentah (tanpa parsing/filter)
+    - Validasi: IsNullOrWhiteSpace → skip
+    - Duplicate check: existingNames.Contains(item.ItemNum) → skip
+    - Insert: Name = item.ItemNum (persis apa adanya)
+    - Counter "filtered" dihapus (tidak relevan lagi)
+    - Summary log disederhanakan
+
+  ⚠️  PENTING: Sebelum menjalankan logic baru, user harus:
+    DELETE FROM db_cos_checksheet.dbo.tlkp_cos_battery_types;
+    Supaya sync baru bisa insert ulang dengan format ItemNum mentah.
+
+
+  ─────────────────────────────────────────
+  C. DATABASE KETIGA: db_padCost
+  ─────────────────────────────────────────
+
+  ✅ Tujuan: Akses data produksi real-time untuk fitur Auto-Detect Battery.
+     Database ini milik sistem lain — ReadOnly, JANGAN write.
+
+  📦 Connection String (appsettings.json):
+  ─────────────────────────────────────────
+    "PadCostConnection": "Server=ADAM123\\SQLEXPRESS;Database=db_padCost;
+     User Id=sa;Password=07Mei2005;TrustServerCertificate=True;Encrypt=False;"
+
+  📁 Files BARU:
+  ─────────────────────────────────────────
+  - backend/Models/PadCost.cs (1 file, 3 entity classes)
+    ├─ Achievement     → t_achievement (Parent, PK: achi_id IDENTITY)
+    ├─ ActAchievement  → t_actAchievement (Child, PK: actl_id IDENTITY)
+    └─ Absensi         → t_absensi (Child, Composite PK: achi_id + abse_npk)
+
+  - backend/Data/PadCostDbContext.cs
+    ├─ DbSet: Achievements, ActAchievements, Absensis
+    ├─ OnModelCreating: Table mapping, composite key, FK relationships
+    ├─ Relasi: Achievement → ActAchievements (One-to-Many)
+    └─ Relasi: Achievement → Absensis (One-to-Many)
+
+  📝 Files DIMODIFIKASI:
+  ─────────────────────────────────────────
+  - backend/appsettings.json → + PadCostConnection
+  - backend/Program.cs → + AddDbContext<PadCostDbContext> (UseCompatibilityLevel 120)
+
+  ✅ Arsitektur Model — Konsisten 1 File per Database:
+  ─────────────────────────────────────────
+    backend/Models/
+    ├── CosModels.cs   ← semua entity db_cos_checksheet
+    ├── MasterData.cs  ← semua entity db_master_data
+    └── PadCost.cs     ← semua entity db_padCost (BARU)
+
+  Tipe Data SQL → C# Mapping:
+  ─────────────────────────────────────────
+    smallint NULL      → short?
+    decimal(18,2) NULL → decimal?
+    decimal(18,1) NULL → decimal?
+    datetime NULL      → DateTime?
+    varchar(50) NOT NULL → string (non-nullable, composite PK part)
+    int IDENTITY       → int + DatabaseGeneratedOption.Identity
+
+
+  ─────────────────────────────────────────
+  D. AUTO-DETECT RUNNING BATTERY
+  ─────────────────────────────────────────
+
+  ✅ Fitur: Saat Operator memilih Line + Shift, sistem otomatis mengisi
+     battery slots berdasarkan data produksi real-time dari db_padCost.
+
+  📁 Files BARU:
+  ─────────────────────────────────────────
+  - backend/Services/ProductionDataService.cs
+    ├─ Dependency: PadCostDbContext (read) + CosDbContext (match)
+    ├─ Method: GetRunningBatteriesAsync(lineId, shiftId, date?)
+    ├─ Step 1: JOIN t_achievement + t_actAchievement
+    │   Filter: achi_date == today, shift_id, line_id, actl_item NOT NULL
+    │   SELECT DISTINCT actl_item
+    ├─ Step 2: Match ke CosBatteryTypes via SourceItemNum atau Name
+    ├─ Deduplicate by Name (case-insensitive)
+    └─ Return: List<RunningBatteryDto>
+
+  - backend/Controllers/ProductionController.cs
+    ├─ GET /api/production/running-batteries?lineId={id}&shiftId={id}
+    ├─ Validasi: lineId > 0, shiftId > 0
+    ├─ Tanggal otomatis: DateTime.Today (server-side)
+    └─ Response: { date, lineId, shiftId, count, batteries[] }
+
+  📝 Files DIMODIFIKASI:
+  ─────────────────────────────────────────
+  - backend/Program.cs
+    └─ + builder.Services.AddScoped<ProductionDataService>()
+
+  - frontend/src/api/cos-api.ts
+    ├─ Type: RunningBatteryDto { id, name, sourceItemNum, formId }
+    ├─ Type: RunningBatteriesResponse { date, lineId, shiftId, count, batteries }
+    └─ Function: getRunningBatteries(lineId, shiftId) → apiFetch
+
+  - frontend/src/pages/cos-validation/cos-validation.tsx
+    ├─ Import: getRunningBatteries dari cos-api.ts
+    └─ useEffect baru "Auto-Detect Running Batteries":
+        ├─ Trigger: [lineId, shiftId, formDef]
+        ├─ Guard: lineId && shiftId && initialLoadDone && formDef
+        ├─ Action: getRunningBatteries(lineId, shiftId)
+        ├─ Jika ada data → setBatterySlots sesuai jumlah battery + setSettings({})
+        ├─ Jika kosong → reset ke default empty slots (manual mode)
+        ├─ Anti-race-condition: cancelled flag di cleanup
+        └─ Error handling: catch → log error, jangan break form
+
+  Alur Data:
+  ─────────────────────────────────────────
+    User pilih Line=3 → useEffect belum fire (shiftId masih null)
+    User pilih Shift=1 → useEffect fires (lineId=3, shiftId=1)
+      │
+      ▼ GET /api/production/running-batteries?lineId=3&shiftId=1
+      │
+      ├── Ada data → setBatterySlots([{type:"F-AFCC-...", mold:null}, ...])
+      │              Slot otomatis terisi sesuai jumlah battery yang running
+      │
+      └── Kosong  → setBatterySlots ke default empty slots (manual mode)
+
+  📝 Test Data:
+  ─────────────────────────────────────────
+  - File: dummy-data-padcost.sql (di root project)
+  - Instruksi: Insert dummy data ke t_achievement + t_actAchievement
+  - Step 0: Cek nama battery yang ada di tlkp_cos_battery_types
+  - Step 1-3: Insert header + detail dengan actl_item yang match
+  - Cleanup: DELETE statement (commented out, jalankan setelah test)
+
+
+  ─────────────────────────────────────────
+  E. DAFTAR LENGKAP FILE YANG DIBUAT/DIMODIFIKASI
+  ─────────────────────────────────────────
+
+  📁 FILES BARU:
+  ├─ backend/Models/PadCost.cs                     → 3 entity (Achievement, ActAchievement, Absensi)
+  ├─ backend/Data/PadCostDbContext.cs               → DbContext db_padCost
+  ├─ backend/Services/ProductionDataService.cs      → Query PadCost + match COS
+  ├─ backend/Controllers/ProductionController.cs    → GET /api/production/running-batteries
+  └─ dummy-data-padcost.sql                         → Script test data
+
+  📝 FILES DIMODIFIKASI:
+  ├─ backend/appsettings.json                       → + PadCostConnection
+  ├─ backend/Program.cs                             → + PadCostDbContext + ProductionDataService
+  ├─ backend/Services/BatteryTypeSyncService.cs     → Logic lama di-comment, logic baru (simple)
+  ├─ frontend/src/api/cos-api.ts                    → + getRunningBatteries + DTOs
+  └─ frontend/src/pages/cos-validation/cos-validation.tsx
+      ├─ + import useAuth, getRunningBatteries
+      ├─ + useAuth() hook
+      ├─ + autoSelectDone ref
+      ├─ + useEffect: Auto-Select Operator
+      ├─ + useEffect: Auto-Detect Running Batteries
+      └─ + Fix handleLineChange: preserve operator saat role=operator
+
+
+  ─────────────────────────────────────────
+  F. DATABASE ARCHITECTURE (UPDATED)
+  ─────────────────────────────────────────
+
+  ┌────────────────────┬─────────────────────────┬────────────────────────┐
+  │ Database           │ DbContext               │ Fungsi                 │
+  ├────────────────────┼─────────────────────────┼────────────────────────┤
+  │ db_master_data     │ MasterDbContext          │ Personnel, Lines,      │
+  │                    │                         │ Shifts, Molds, Legacy  │
+  ├────────────────────┼─────────────────────────┼────────────────────────┤
+  │ db_cos_checksheet  │ CosDbContext             │ Form definitions,      │
+  │                    │                         │ Check items, Battery   │
+  │                    │                         │ types, Submissions     │
+  ├────────────────────┼─────────────────────────┼────────────────────────┤
+  │ db_padCost         │ PadCostDbContext         │ Production achievement │
+  │                    │ (ReadOnly!)             │ data (real-time).      │
+  │                    │                         │ Auto-detect battery.   │
+  └────────────────────┴─────────────────────────┴────────────────────────┘
+
+
+  ─────────────────────────────────────────
+  G. API ENDPOINTS BARU
+  ─────────────────────────────────────────
+
+  GET /api/production/running-batteries?lineId={id}&shiftId={id}
+    ├─ Deskripsi: Ambil battery types yang sedang diproduksi hari ini
+    ├─ Input: lineId (int), shiftId (int)
+    ├─ Tanggal: otomatis DateTime.Today (server-side)
+    ├─ Response: { date, lineId, shiftId, count, batteries[] }
+    └─ Batteries: [{ id, name, sourceItemNum, formId }]
+
+
+  ⚠️ NEXT STEPS:
+  ─────────────────────────────────────────
+  1. Insert dummy data via dummy-data-padcost.sql → test auto-detect
+  2. Verifikasi battery slots terisi otomatis saat pilih Line + Shift
+  3. Handle edge case: data PadCost tidak match dengan COS battery types
+  4. (Future) Production: Pastikan db_padCost diisi oleh sistem produksi real
+
+
+══════════════════════════════════════════════════════════════════════════════════
+ 9. DATE FILTER, STRICT BATTERY DROPDOWN & FILTERED MOLD (Sesi 9 — 2026-02-18)
+    Mission 1: Tanggal dikirim ke API Auto-Detect (bukan hardcode hari ini)
+    Mission 2: Dropdown Type Battery strict (hanya yang running)
+    Mission 3: Dropdown No. Mold filtered per battery type
+══════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  RINGKASAN CEPAT                                                       │
+  │                                                                         │
+  │  Scope     : Backend (BatteryController) + Frontend (cos-validation,   │
+  │              cos-api) + Backend (ProductionController)                  │
+  │  Files     : 4 files modified                                           │
+  │  Build     : ✅ Backend 0 errors, ✅ Frontend TypeScript 0 errors      │
+  │  Status    : Semua fitur sudah diuji dan berhasil                       │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+  ─────────────────────────────────────────
+  A. DATE FILTER — TANGGAL DIKIRIM KE API
+  ─────────────────────────────────────────
+
+  ✅ Masalah: Auto-detect battery selalu pakai DateTime.Today (server-side).
+     Jika user pilih tanggal kemarin (misal 17 Feb), API tetap query hari ini
+     → data produksi tidak ketemu → return 0 results.
+
+  📝 Perubahan di 3 layer:
+  ─────────────────────────────────────────
+  1. Backend — ProductionController.cs:
+     - SEBELUM: Tidak ada parameter date, hardcode DateTime.Today
+     - SESUDAH: Terima [FromQuery] DateTime? date = null
+     - Default: date ?? DateTime.Today (backward compatible)
+     - Log sekarang menampilkan tanggal yang benar
+
+  2. Frontend API — cos-api.ts:
+     - SEBELUM: getRunningBatteries(lineId, shiftId)
+     - SESUDAH: getRunningBatteries(lineId, shiftId, date?)
+     - Format tanggal: yyyy-MM-dd (local date, tanpa timezone shift)
+     - Menggunakan manual formatting (getFullYear/getMonth/getDate)
+       untuk menghindari masalah timezone di toISOString()
+
+  3. Frontend Logic — cos-validation.tsx:
+     - Kirim state `tanggal` ke getRunningBatteries(lineId!, shiftId!, tanggal)
+     - Dependency array useEffect ditambah `tanggal`
+     - SEBELUM: [lineId, shiftId, formDef]
+     - SESUDAH: [lineId, shiftId, tanggal, formDef]
+     - Efek: ganti tanggal → auto re-fetch running batteries
+
+  Alur Baru:
+  ─────────────────────────────────────────
+    User pilih tanggal 2026-02-17 → pilih Line → pilih Shift
+      → GET /api/production/running-batteries?lineId=63&shiftId=1&date=2026-02-17
+      → Backend query: WHERE achi_date = 2026-02-17 ✅ (bukan hari ini)
+
+
+  ─────────────────────────────────────────
+  B. STRICT BATTERY DROPDOWN
+  ─────────────────────────────────────────
+
+  ✅ Masalah: Setelah auto-detect menemukan 2 battery yang running,
+     dropdown Type Battery tetap menampilkan SEMUA battery types.
+     Seharusnya hanya menampilkan yang terdeteksi running.
+
+  📝 Perubahan di cos-validation.tsx:
+  ─────────────────────────────────────────
+  - State baru: detectedBatteryNames (string[] | null)
+    ├─ null = mode manual → dropdown tampilkan semua battery types
+    └─ ["W-BUSH-...", "W-GRID-..."] = mode strict → hanya 2 item
+
+  - Auto-detect berhasil → setDetectedBatteryNames(names)
+  - Auto-detect kosong  → setDetectedBatteryNames(null) → manual mode
+  - Clear form          → setDetectedBatteryNames(null) → manual mode
+
+  - Dropdown JSX:
+    SEBELUM: items={batteryTypes.map(t => t.name)}
+    SESUDAH: items={detectedBatteryNames ? detectedBatteryNames : batteryTypes.map(t => t.name)}
+
+  Hasil:
+  ─────────────────────────────────────────
+    Auto-detect menemukan 2 battery
+      → Dropdown hanya tampilkan 2 item ✅
+      → User TIDAK bisa pilih battery lain (strict mode)
+
+    Auto-detect tidak menemukan data
+      → Dropdown tampilkan semua (manual mode fallback) ✅
+
+
+  ─────────────────────────────────────────
+  C. FILTERED MOLD DROPDOWN PER BATTERY
+  ─────────────────────────────────────────
+
+  ✅ Masalah: Dropdown No. Mold menampilkan SEMUA mold dari tlkp_mold,
+     padahal seharusnya hanya menampilkan mold yang relevan dengan
+     battery type yang terpilih di slot tersebut.
+
+  🔑 Logic Parsing Battery Name → Keyword:
+  ─────────────────────────────────────────
+    Input:   "W-GRID-BB8600S-00-0600"
+    Split:   ["W", "GRID", "BB8600S", "00", "0600"]
+    Keyword: segments[2] = "BB8600S"
+    Query:   WHERE item_num LIKE '%BB8600S%'
+
+  📝 Backend — BatteryController.cs (endpoint BARU):
+  ─────────────────────────────────────────
+  GET /api/battery/molds-by-battery?batteryName={name}
+    ├─ Step 1: Parse batteryName.Split('-'), ambil index 2
+    ├─ Step 2: Query tlkp_mold WHERE mold_status='1' AND item_num LIKE '%keyword%'
+    ├─ Step 3: Return { batteryName, keyword, count, molds[] }
+    ├─ Edge case: segments < 3 → return empty list (UI tetap jalan)
+    └─ Contoh: ?batteryName=W-GRID-BB8600S-00-0600 → keyword=BB8600S → 3 molds
+
+  📝 Frontend API — cos-api.ts:
+  ─────────────────────────────────────────
+  - Interface: MoldsByBatteryResponse { batteryName, keyword, count, molds[] }
+  - Function: getMoldsByBattery(batteryName) → apiFetch
+
+  📝 Frontend Logic — cos-validation.tsx:
+  ─────────────────────────────────────────
+  - State baru: filteredMoldsBySlot (Record<number, MoldDto[]>)
+    Key = slot index, Value = filtered mold list dari API
+
+  - useEffect baru "Auto-Fetch Filtered Molds":
+    ├─ Trigger: [batterySlots]
+    ├─ Untuk setiap slot yang punya battery type → fetch getMoldsByBattery()
+    ├─ Simpan hasil di filteredMoldsBySlot[slotIdx]
+    ├─ Jika slot kosong → hapus filtered molds untuk slot itu
+    └─ Batch semua fetch, update state sekali setelah semua selesai
+
+  - getMoldsForSlot() diperbarui:
+    SEBELUM: return moldList.map(m => m.code) — selalu return semua mold
+    SESUDAH: filteredMoldsBySlot[slotIdx] ada? pakai filtered : fallback moldList
+
+  Hasil:
+  ─────────────────────────────────────────
+    Slot 0: W-BUSH-7A16000-00-1000 → keyword "7A16000" → 2 molds ✅
+    Slot 1: W-GRID-BB8600S-00-0600 → keyword "BB8600S" → 3 molds ✅
+    Masing-masing slot punya dropdown mold yang berbeda dan terfilter!
+
+
+  ─────────────────────────────────────────
+  D. DAFTAR FILE YANG DIMODIFIKASI
+  ─────────────────────────────────────────
+
+  📝 FILES DIMODIFIKASI:
+  ├─ backend/Controllers/ProductionController.cs
+  │   └─ + [FromQuery] DateTime? date parameter
+  ├─ backend/Controllers/BatteryController.cs
+  │   └─ + endpoint GET molds-by-battery (parsing + filter)
+  ├─ frontend/src/api/cos-api.ts
+  │   ├─ + date parameter di getRunningBatteries()
+  │   ├─ + MoldsByBatteryResponse interface
+  │   └─ + getMoldsByBattery() function
+  └─ frontend/src/pages/cos-validation/cos-validation.tsx
+      ├─ + import getMoldsByBattery
+      ├─ + state: detectedBatteryNames (strict battery filter)
+      ├─ + state: filteredMoldsBySlot (mold filter per slot)
+      ├─ + useEffect: auto-fetch filtered molds
+      ├─ + tanggal di dependency auto-detect useEffect
+      ├─ + dropdown battery: conditional items (detected vs all)
+      └─ + getMoldsForSlot(): filtered-first logic
+
+  📁 FILES BARU:
+  └─ panduandilaptoplain.txt — panduan deployment ke laptop baru
+
+
+  ─────────────────────────────────────────
+  E. API ENDPOINTS (UPDATED)
+  ─────────────────────────────────────────
+
+  GET /api/production/running-batteries?lineId={id}&shiftId={id}&date={yyyy-MM-dd}
+    ├─ UPDATED: sekarang menerima parameter date (opsional)
+    ├─ Default: DateTime.Today jika date tidak dikirim
+    └─ Response: { date, lineId, shiftId, count, batteries[] }
+
+  GET /api/battery/molds-by-battery?batteryName={name}    ← BARU
+    ├─ Deskripsi: Filter mold berdasarkan battery type name
+    ├─ Parsing: Split('-') → index[2] → keyword
+    ├─ Query: tlkp_mold WHERE mold_status='1' AND item_num LIKE '%keyword%'
+    └─ Response: { batteryName, keyword, count, molds[] }
+
+
+  ⚠️ NEXT STEPS:
+  ─────────────────────────────────────────
+  1. (Done) Auto-detect running batteries ✅
+  2. (Done) Strict battery dropdown ✅
+  3. (Done) Filtered mold per slot ✅
+  4. (Future) Handle battery name format yang tidak standard
+  5. (Future) Fitur Filtered Mold Dropdown via MoldController terpisah (jika perlu)
+
+
+══════════════════════════════════════════════════════════════════════════════════
+10. SETUP MULTI-SERVER & SCHEMA COMPATIBILITY FIX (Sesi 10 — 2026-02-18)
+    Mission 1: Setup Connection ke Server Production (DBPORTAL)
+    Mission 2: Analisa & Fix Error Schema Beda antar Server
+    Mission 3: Filter Line Dropdown (work_center LIKE 'WKAM%')
+══════════════════════════════════════════════════════════════════════════════════
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  RINGKASAN CEPAT                                                       │
+  │                                                                         │
+  │  Scope     : Backend (appsettings.json, Models/MasterData.cs,          │
+  │              Controllers/BatteryController.cs)                         │
+  │  Files     : 3 files modified                                          │
+  │  Issue     : Login gagal saat connect ke DBPORTAL (production)         │
+  │  Root Cause: Schema tabel berbeda antara DEV dan PRODUCTION            │
+  │  Status    : ✅ Diagnosed, fix ready (comment out missing columns)     │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+  ─────────────────────────────────────────
+  A. SETUP CONNECTION KE SERVER PRODUCTION (DBPORTAL)
+  ─────────────────────────────────────────
+
+  ✅ Analisa: Apakah aman pakai server berbeda untuk tiap database?
+
+  Kesimpulan: AMAN — ketiga DbContext sepenuhnya independen.
+  Tidak ada cross-database JOIN atau distributed transaction di kode.
+
+  - BatteryTypeSyncService: Baca MasterDbContext → tulis CosDbContext
+    (dua query terpisah, bukan satu transaction)
+  - ProductionDataService: Baca PadCostDbContext → match di CosDbContext
+    (dua query terpisah, bukan JOIN lintas server)
+
+  📝 Konfigurasi Connection String (appsettings.json):
+  ─────────────────────────────────────────
+  SEBELUM (semua di GSPORTAL-DEV01):
+    DefaultConnection      → Server=GSPORTAL-DEV01; Database=db_master_data
+    CosChecksheetConnection → Server=GSPORTAL-DEV01; Database=db_cos_checksheet
+    PadCostConnection       → Server=GSPORTAL-DEV01; Database=db_padCost
+
+  SESUDAH (split — DEV + PRODUCTION):
+    DefaultConnection      → Server=DBPORTAL; Database=db_master_data     ← CHANGED
+    CosChecksheetConnection → Server=GSPORTAL-DEV01; Database=db_cos_checksheet  (tetap)
+    PadCostConnection       → Server=DBPORTAL; Database=db_padCost        ← CHANGED
+
+  ⚠️  CATATAN: Jika ingin kembali ke full DEV, ubah DBPORTAL → GSPORTAL-DEV01.
+
+
+  ─────────────────────────────────────────
+  B. ERROR LOGIN — SCHEMA BEDA ANTAR SERVER
+  ─────────────────────────────────────────
+
+  ❌ Masalah: Login gagal dengan error:
+     "Microsoft.Data.SqlClient.SqlException: Invalid column name 'userKasie_id'"
+
+  🔍 Root Cause Analysis:
+  ─────────────────────────────────────────
+  EF Core, ketika query tabel (misal `tlkp_job`), otomatis SELECT SEMUA
+  kolom yang didefinisikan di model C#. Jika kolom ada di model tapi
+  TIDAK ADA di tabel database → SQL Server return Error 207.
+
+  Kolom `userKasie_id` ada di 5 model C#:
+    - TlkpLine (tlkp_line)
+    - TlkpLineGroup (tlkp_lineGroup)
+    - TlkpOperator (tlkp_operator)
+    - TlkpJob (tlkp_job)
+    - TlkpUserKasie (tlkp_userKasie) — ini PK, pasti ada
+
+  📊 Hasil Perbandingan Schema (INFORMATION_SCHEMA.COLUMNS):
+  ─────────────────────────────────────────
+
+  ┌──────────────────┬──────────────────────┬──────────────────────┐
+  │ Tabel            │ DBPORTAL (Production)│ GSPORTAL-DEV01 (Dev) │
+  ├──────────────────┼──────────────────────┼──────────────────────┤
+  │ tlkp_line        │ ❌ TIDAK ADA          │ ✅ Ada               │
+  │ tlkp_job         │ ❌ TIDAK ADA          │ ✅ Ada               │
+  │ tlkp_lineGroup   │ ✅ Ada               │ ✅ Ada               │
+  │ tlkp_operator    │ ✅ Ada               │ ✅ Ada               │
+  │ tlkp_userKasie   │ ✅ Ada               │ ✅ Ada               │
+  └──────────────────┴──────────────────────┴──────────────────────┘
+
+  Jadi `tlkp_line` dan `tlkp_job` di DBPORTAL TIDAK punya `userKasie_id`,
+  sedangkan di GSPORTAL-DEV01 sudah punya. Schema berbeda!
+
+  ✅ Fix: Comment out `UserKasieId` di model TlkpLine dan TlkpJob.
+  ─────────────────────────────────────────
+  File: backend/Models/MasterData.cs
+
+  Di model TlkpLine:
+    // NOTE: Kolom userKasie_id tidak ada di DBPORTAL (production).
+    // Uncomment jika pakai GSPORTAL-DEV01.
+    // [Column("userKasie_id")]
+    // public int? UserKasieId { get; set; }
+
+  Di model TlkpJob:
+    // NOTE: Kolom userKasie_id tidak ada di DBPORTAL (production).
+    // Uncomment jika pakai GSPORTAL-DEV01.
+    // [Column("userKasie_id")]
+    // public int? UserKasieId { get; set; }
+
+  ⚠️  PENTING:
+  - Property ini TIDAK PERNAH dipakai di kode aplikasi
+    (tidak ada controller/service yang akses UserKasieId dari TlkpLine/TlkpJob).
+  - EF Core tetap SELECT-nya karena ada di model → menyebabkan error.
+  - Dengan di-comment, EF Core tidak lagi SELECT kolom itu → kompatibel
+    dengan KEDUA server.
+  - Jika sewaktu-waktu kembali ke DEV (GSPORTAL-DEV01), tinggal UNCOMMENT.
+
+
+  ─────────────────────────────────────────
+  C. FILTER LINE DROPDOWN (WORK_CENTER LIKE 'WKAM%')
+  ─────────────────────────────────────────
+
+  ✅ Requirement: Dropdown Line di form COS hanya boleh menampilkan
+     line yang punya work_center berawalan 'WKAM' (area COS).
+
+  📝 Perubahan di BatteryController.cs:
+  ─────────────────────────────────────────
+  File: backend/Controllers/BatteryController.cs
+  Endpoint: GET /api/battery/lines
+
+  SEBELUM:
+    .Where(l => l.LineStatus == 1)
+
+  SESUDAH:
+    .Where(l => l.LineStatus == 1
+             && l.WorkCenter != null
+             && l.WorkCenter.StartsWith("WKAM"))
+
+  EF Core akan translate StartsWith("WKAM") → SQL:
+    WHERE work_center LIKE 'WKAM%'
+
+  ⚠️  CATATAN: Model TlkpLine sudah punya property WorkCenter
+  (kolom work_center) — tidak perlu tambah kolom baru.
+  Frontend tidak perlu diubah — dropdown sudah baca dari endpoint ini.
+
+
+  ─────────────────────────────────────────
+  D. DAFTAR FILE YANG DIMODIFIKASI
+  ─────────────────────────────────────────
+
+  📝 FILES DIMODIFIKASI:
+  ├─ backend/appsettings.json
+  │   └─ DefaultConnection & PadCostConnection → Server=DBPORTAL
+  ├─ backend/Models/MasterData.cs
+  │   ├─ TlkpLine: UserKasieId di-comment (tidak ada di DBPORTAL)
+  │   └─ TlkpJob: UserKasieId di-comment (tidak ada di DBPORTAL)
+  └─ backend/Controllers/BatteryController.cs
+      └─ GET /api/battery/lines: + filter WorkCenter.StartsWith("WKAM")
+
+
+  ─────────────────────────────────────────
+  E. LESSON LEARNED
+  ─────────────────────────────────────────
+
+  1. Database yang NAMANYA SAMA di server berbeda BELUM TENTU punya
+     SCHEMA yang sama. Selalu verifikasi dengan INFORMATION_SCHEMA.COLUMNS.
+
+  2. EF Core SELECT semua property di model, bahkan yang tidak dipakai
+     di kode. Jika kolom tidak ada di DB → error SQL 207.
+
+  3. Solusi yang aman: Comment (bukan hapus) property yang bermasalah,
+     dengan catatan kapan harus uncomment. Ini memudahkan switch antar server.
+
+  4. Menggunakan server berbeda untuk database berbeda AMAN selama
+     tidak ada cross-database JOIN atau distributed transaction.
+
+
+  ⚠️ NEXT STEPS:
+  ─────────────────────────────────────────
+  1. Apply fix UserKasieId (comment out) di MasterData.cs
+  2. Apply filter WKAM di BatteryController.cs  
+  3. Restart backend → test login ke DBPORTAL
+  4. Verifikasi dropdown Line hanya tampilkan line area COS
+  5. (Future) Jika DBPORTAL menambah kolom userKasie_id → uncomment kembali
+
+
+================================================================================
+  END OF PROGRESS LOG
+  Last Updated: 2026-02-18 (Sesi 10 — Setup Multi-Server & Schema Compatibility Fix)
+================================================================================

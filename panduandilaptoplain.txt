@@ -1,0 +1,366 @@
+================================================================================
+  PANDUAN DEPLOYMENT KE LAPTOP BARU (via GitHub)
+================================================================================
+  Author       : Technical Lead
+  Last Updated : 2026-02-17
+  Project      : CheckSheet COS (Form Validation System)
+================================================================================
+
+ASUMSI KONDISI LAPTOP BARU:
+  ✅ SQL Server sudah terinstall & running
+  ✅ .NET 8 SDK sudah terinstall
+  ✅ Node.js (v18+) sudah terinstall
+  ✅ Git sudah terinstall
+  ✅ Database "db_master_data" SUDAH ADA (isi lengkap)
+  ✅ Database "db_padCost" SUDAH ADA (isi lengkap)
+  ❌ Database "db_cos_checksheet" BELUM ADA (akan dibuat di panduan ini)
+
+================================================================================
+  LANGKAH 1 — CLONE REPOSITORY
+================================================================================
+
+  1.1  Buka terminal / Command Prompt / PowerShell.
+
+  1.2  Navigasi ke folder kerja kamu, lalu clone repo:
+
+       > cd C:\Users\NamaKamu\Documents
+       > git clone https://github.com/USERNAME/form-main.git
+       > cd form-main
+
+       Sekarang kamu punya struktur:
+       form-main/
+       ├── backend/
+       ├── frontend/
+       ├── Progress.txt
+       └── panduandilaptoplain.txt   ← file ini
+
+================================================================================
+  LANGKAH 2 — INSTALL DEPENDENCIES
+================================================================================
+
+  ┌─────────────────────────────────┐
+  │  2.1  BACKEND (.NET)            │
+  └─────────────────────────────────┘
+
+       > cd backend
+       > dotnet restore
+
+       Tunggu sampai muncul "Restore completed".
+       Jika ada error NuGet, pastikan internet tersambung.
+
+  ┌─────────────────────────────────┐
+  │  2.2  FRONTEND (React + Vite)   │
+  └─────────────────────────────────┘
+
+       > cd ../frontend
+       > npm install
+
+       Tunggu sampai selesai. Abaikan warning (selama bukan error).
+
+================================================================================
+  LANGKAH 3 — KONFIGURASI CONNECTION STRING (⚠ CRITICAL)
+================================================================================
+
+  File yang harus diedit:
+  → backend/appsettings.json
+
+  3.1  Buka file tersebut di text editor / VS Code.
+
+  3.2  Cari bagian "ConnectionStrings". Isinya akan seperti ini:
+
+       "ConnectionStrings": {
+         "MasterConnection":   "Server=ADAM123\\SQLEXPRESS;Database=db_master_data;...",
+         "CosConnection":      "Server=ADAM123\\SQLEXPRESS;Database=db_cos_checksheet;...",
+         "PadCostConnection":  "Server=ADAM123\\SQLEXPRESS;Database=db_padCost;..."
+       }
+
+  3.3  GANTI "ADAM123\\SQLEXPRESS" di KETIGA connection string dengan nama
+       SQL Server instance di laptop baru kamu.
+
+       Cara cek nama server:
+       - Buka SSMS (SQL Server Management Studio)
+       - Lihat nama server di dialog login (contoh: LAPTOP-XYZ\SQLEXPRESS)
+       - Atau jalankan query: SELECT @@SERVERNAME
+
+  3.4  Contoh hasil setelah diedit (misalnya server kamu = LAPTOP-XYZ\SQLEXPRESS):
+
+       "ConnectionStrings": {
+         "MasterConnection":   "Server=LAPTOP-XYZ\\SQLEXPRESS;Database=db_master_data;Trusted_Connection=True;TrustServerCertificate=True;",
+         "CosConnection":      "Server=LAPTOP-XYZ\\SQLEXPRESS;Database=db_cos_checksheet;Trusted_Connection=True;TrustServerCertificate=True;",
+         "PadCostConnection":  "Server=LAPTOP-XYZ\\SQLEXPRESS;Database=db_padCost;Trusted_Connection=True;TrustServerCertificate=True;"
+       }
+
+       ⚠ PENTING: Pastikan KETIGA connection string sudah diganti!
+          - MasterConnection   → db_master_data      (SUDAH ADA)
+          - CosConnection      → db_cos_checksheet   (AKAN DIBUAT)
+          - PadCostConnection  → db_padCost           (SUDAH ADA)
+
+       ⚠ JANGAN COMMIT file ini setelah diedit! (nama server beda tiap laptop)
+          Tambahkan ke .gitignore jika perlu, atau pakai appsettings.Development.json.
+
+================================================================================
+  LANGKAH 4 — BUAT DATABASE db_cos_checksheet (EF Core Migration)
+================================================================================
+
+  Database ini BELUM ADA di laptop baru. Kita akan membuatnya otomatis
+  menggunakan migration files yang sudah ada di dalam project.
+
+  4.1  Pastikan kamu sudah ada di folder backend:
+
+       > cd backend
+
+  4.2  Install EF Core tool (jika belum):
+
+       > dotnet tool install --global dotnet-ef
+
+       Jika sudah pernah install, abaikan error "already installed".
+
+  4.3  Jalankan migration untuk membuat database + semua tabel:
+
+       > dotnet ef database update --context FormCosDbContext
+
+       ┌──────────────────────────────────────────────────────────────┐
+       │  Perintah ini akan OTOMATIS:                                │
+       │  1. Membuat database "db_cos_checksheet" di SQL Server      │
+       │  2. Membuat semua tabel:                                    │
+       │     - tlkp_cos_form_definitions                             │
+       │     - tlkp_cos_check_items                                  │
+       │     - tlkp_cos_battery_types                                │
+       │     - tlkp_cos_form_problem_columns                         │
+       │     - tlkp_cos_form_signature_slots                         │
+       │     - t_cos_submissions                                     │
+       │     - t_cos_check_values                                    │
+       │     - t_cos_problems                                        │
+       │     - t_cos_signatures                                      │
+       │     - t_cos_approval_attachments                            │
+       │  3. Menerapkan semua migration secara berurutan              │
+       └──────────────────────────────────────────────────────────────┘
+
+  4.4  Verifikasi:
+       - Buka SSMS
+       - Refresh daftar database
+       - Pastikan "db_cos_checksheet" muncul dan tabel-tabelnya ada
+
+       Jika ada error "Login failed":
+       → Cek ulang connection string di appsettings.json
+       → Pastikan SQL Server mengizinkan Windows Authentication
+
+================================================================================
+  LANGKAH 5 — SEEDING DATA AWAL (⚠ PENTING — FORM MASIH KOSONG!)
+================================================================================
+
+  Setelah migration berhasil, database sudah ada TAPI TABEL-TABEL KOSONG.
+  Aplikasi tidak akan menampilkan form apapun tanpa data ini.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  OPSI A: EXPORT-IMPORT DARI LAPTOP LAMA (RECOMMENDED)         │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Cara ini paling mudah dan memastikan data 100% sama.
+
+  DI LAPTOP LAMA (yang sudah jalan):
+
+  A.1  Buka SSMS, connect ke database db_cos_checksheet.
+
+  A.2  Klik kanan database → Tasks → Generate Scripts...
+
+  A.3  Pilih tabel-tabel BERIKUT (yang berisi data definisi form):
+       ✅ tlkp_cos_form_definitions
+       ✅ tlkp_cos_check_items
+       ✅ tlkp_cos_form_problem_columns
+       ✅ tlkp_cos_form_signature_slots
+       ✅ tlkp_cos_battery_types        (opsional, tapi recommended)
+
+       ❌ JANGAN include tabel transaksi (t_cos_submissions, dll)
+          kecuali memang ingin memindahkan data submission juga.
+
+  A.4  Di wizard "Set Scripting Options":
+       - Klik "Advanced"
+       - Cari "Types of data to script" → pilih "Data only"
+         (atau "Schema and data" jika ingin sekalian)
+       - Save ke file, misal: seed_cos_data.sql
+
+  A.5  Copy file seed_cos_data.sql ke laptop baru (via USB/email/GitHub).
+
+  DI LAPTOP BARU:
+
+  A.6  Buka SSMS, connect ke db_cos_checksheet.
+
+  A.7  Buka file seed_cos_data.sql → Execute.
+
+  A.8  Verifikasi:
+       > SELECT COUNT(*) FROM tlkp_cos_form_definitions   -- harus > 0
+       > SELECT COUNT(*) FROM tlkp_cos_check_items         -- harus > 0
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  OPSI B: JALANKAN SCRIPT SQL MANUAL                            │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Jika tidak punya akses ke laptop lama, kamu bisa insert manual.
+  Cari file "seed_form_data.sql" di repo (jika ada) dan jalankan.
+
+  Contoh minimal agar aplikasi bisa jalan:
+
+  ---- CUT HERE (jalankan di SSMS pada db_cos_checksheet) ----
+
+  -- 1. Form Definition
+  SET IDENTITY_INSERT tlkp_cos_form_definitions ON;
+  INSERT INTO tlkp_cos_form_definitions (Id, Code, Title, Subtitle)
+  VALUES (1, 'COS_VALIDATION', 'CHECK ON SPOT', 'Form Validasi Kualitas Battery');
+  SET IDENTITY_INSERT tlkp_cos_form_definitions OFF;
+
+  -- 2. Check Items (sesuaikan dengan kebutuhan)
+  --    Kamu perlu menambahkan item-item cek sesuai form aslinya.
+  --    Contoh placeholder:
+  --    INSERT INTO tlkp_cos_check_items (FormId, SettingKey, Label, InputType, SortOrder)
+  --    VALUES (1, 'visual_check', 'Visual Check', 'ok_ng', 1);
+
+  -- 3. Problem Columns
+  --    INSERT INTO tlkp_cos_form_problem_columns (FormId, ColumnKey, HeaderLabel, ...)
+  --    VALUES (...);
+
+  -- 4. Signature Slots
+  --    INSERT INTO tlkp_cos_form_signature_slots (FormId, RoleKey, Label, SortOrder)
+  --    VALUES (1, 'operator', 'Operator', 1),
+  --           (1, 'leader', 'Leader', 2),
+  --           (1, 'kasubsie', 'Kasubsie', 3),
+  --           (1, 'kasie', 'Kasie', 4);
+
+  ---- END CUT ----
+
+  ⚠ CATATAN: Opsi B hanya memberikan kerangka minimal.
+     Opsi A (export-import) jauh lebih baik karena semua data lengkap.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  TENTANG tlkp_cos_battery_types (AUTO-SYNC)                    │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Tabel ini TIDAK PERLU di-seed manual jika kamu sudah export di Opsi A.
+
+  Tapi jika tabel ini kosong, JANGAN KHAWATIR:
+  → Backend memiliki BatteryTypeSyncService (Background Job)
+  → Service ini berjalan otomatis setiap 30 menit
+  → Dia akan menarik data dari db_master_data.tlkp_item
+  → Dan mengisi tlkp_cos_battery_types secara otomatis
+
+  Jadi setelah backend jalan ~1 menit, tabel battery types akan terisi.
+  Kamu juga bisa restart backend untuk memicu sync lebih cepat.
+
+================================================================================
+  LANGKAH 6 — MENJALANKAN APLIKASI
+================================================================================
+
+  Kamu butuh 2 terminal yang berjalan bersamaan.
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  TERMINAL 1: BACKEND (.NET API)                                │
+  └─────────────────────────────────────────────────────────────────┘
+
+       > cd backend
+       > dotnet run
+
+       Tunggu sampai muncul:
+       "Now listening on: http://localhost:5102"
+       (atau port lain — lihat Properties/launchSettings.json)
+
+       ⚠ Jangan tutup terminal ini! Backend harus tetap jalan.
+
+       Cek di browser: http://localhost:5102/api/formdefinition
+       → Harus return JSON (bukan error 500)
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  TERMINAL 2: FRONTEND (React + Vite Dev Server)                │
+  └─────────────────────────────────────────────────────────────────┘
+
+       > cd frontend
+       > npm run dev
+
+       Tunggu sampai muncul:
+       "Local: http://localhost:5173/"
+
+       Buka browser: http://localhost:5173
+
+================================================================================
+  LANGKAH 7 — VERIFIKASI LOGIN
+================================================================================
+
+  7.1  Di halaman login, masukkan NPK dan password.
+
+  7.2  PENTING: Data user disimpan di db_master_data (tabel view_data_auth
+       atau tabel karyawan terkait). Pastikan:
+       - Database db_master_data punya data karyawan yang valid
+       - NPK yang kamu gunakan ADA di database tersebut
+       - Password sesuai (cek mekanisme auth di AuthController.cs)
+
+  7.3  Jika login gagal:
+       - Buka SSMS → db_master_data
+       - Jalankan: SELECT * FROM view_data_auth WHERE npk = 'NPK_KAMU'
+       - Pastikan row ada dan datanya benar
+
+  7.4  Jika login berhasil:
+       - Form COS harus muncul (jika seeding data sudah dilakukan)
+       - Dropdown Operator harus terisi (jika role = operator, auto-select)
+       - Dropdown Line & Shift harus ada pilihan
+
+================================================================================
+  TROUBLESHOOTING
+================================================================================
+
+  ┌─ ERROR: "Cannot open database 'db_cos_checksheet'" ────────────────────┐
+  │  → Connection string salah, atau migration belum dijalankan.           │
+  │  → Ulangi Langkah 3 dan 4.                                            │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌─ ERROR: "Login failed for user..." ────────────────────────────────────┐
+  │  → SQL Server tidak mengizinkan Windows Auth.                          │
+  │  → Buka SQL Server Configuration Manager → pastikan service running.   │
+  │  → Atau ganti Trusted_Connection=True dengan User ID=sa;Password=...  │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌─ ERROR: "dotnet ef not found" ─────────────────────────────────────────┐
+  │  → Jalankan: dotnet tool install --global dotnet-ef                    │
+  │  → Lalu restart terminal.                                              │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌─ Form kosong / tidak muncul ───────────────────────────────────────────┐
+  │  → Seeding data belum dilakukan (Langkah 5).                           │
+  │  → Cek: SELECT COUNT(*) FROM tlkp_cos_form_definitions                │
+  │  → Harus return > 0                                                    │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌─ Battery Type dropdown kosong ─────────────────────────────────────────┐
+  │  → Tunggu 1-2 menit, BatteryTypeSyncService akan otomatis sync.       │
+  │  → Atau restart backend.                                               │
+  │  → Cek log terminal backend: "BatteryTypeSyncService: added X..."     │
+  └────────────────────────────────────────────────────────────────────────┘
+
+  ┌─ Port conflict (5102 atau 5173 sudah dipakai) ─────────────────────────┐
+  │  → Backend: edit Properties/launchSettings.json                        │
+  │  → Frontend: edit vite.config.ts (server.port)                         │
+  └────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+  CHECKLIST RINGKAS (COPY-PASTE FRIENDLY)
+================================================================================
+
+  [ ] 1. git clone <repo-url> && cd form-main
+  [ ] 2. cd backend && dotnet restore
+  [ ] 3. cd ../frontend && npm install
+  [ ] 4. Edit backend/appsettings.json → ganti Server=... (3 connection strings)
+  [ ] 5. cd backend && dotnet tool install --global dotnet-ef
+  [ ] 6. dotnet ef database update --context FormCosDbContext
+  [ ] 7. Jalankan seed SQL di SSMS (export dari laptop lama — Opsi A)
+  [ ] 8. Terminal 1: cd backend && dotnet run
+  [ ] 9. Terminal 2: cd frontend && npm run dev
+  [ ] 10. Buka http://localhost:5173 → Login → Verifikasi form muncul
+
+================================================================================
+  SELESAI! 🎉
+================================================================================
+  Jika semua langkah di atas berhasil, project sudah siap digunakan
+  di laptop baru. Semua fitur (Auth, Auto-Select, Battery Sync,
+  Auto-Detect Running Battery) akan berjalan normal.
+
+  Untuk pertanyaan, buka file Progress.txt untuk memahami
+  arsitektur dan keputusan teknis yang sudah dibuat.
+================================================================================

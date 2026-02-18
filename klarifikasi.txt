@@ -1,0 +1,172 @@
+===============================================================================
+ KLARIFIKASI TABEL: SPLIT DATABASE ARCHITECTURE
+ Tanggal Analisis : 2026-02-16
+ Database Asal    : db_master_data (SQL Server, ADAM123\SQLEXPRESS)
+ Sumber Analisis  : backend/Models/CosModels.cs, MasterData.cs, Data/FormCosDbContext.cs
+===============================================================================
+
+
+###############################################################################
+# GROUP A: STAY IN db_master_data (No Prefix Change)
+###############################################################################
+# Kriteria: Tabel TANPA prefix "cos_". Ini adalah tabel master data umum
+#           yang digunakan oleh banyak aplikasi, bukan hanya COS.
+#           Tidak ada rename, tetap di database asli.
+#
+# Format: [C# Model Class] -> [Nama Tabel SQL] | [Deskripsi]
+###############################################################################
+
+ 1. TlkpPlant        -> tlkp_plant          | Master data pabrik/lokasi
+ 2. TlkpDivisi       -> tlkp_divisi         | Master data divisi
+ 3. TlkpDepartemen   -> tlkp_departemen     | Master data departemen
+ 4. TlkpSection      -> tlkp_section        | Master data seksi/bagian
+ 5. TlkpLine         -> tlkp_line           | Master data line produksi
+ 6. TlkpGroup        -> tlkp_group          | Master data group kerja
+ 7. TlkpShift        -> tlkp_shift          | Master data shift kerja
+ 8. TlkpLineGroup    -> tlkp_lineGroup      | Mapping line-group-leader-kasubsie
+ 9. TlkpOperator     -> tlkp_operator       | Master data operator (composite PK: user_id + jopr_id)
+10. TlkpUserKasie    -> tlkp_userKasie      | Mapping section ke kasie
+11. TlkpUser         -> tlkp_user           | Master data user/login
+12. TlkpItem         -> tlkp_item           | Master data item/produk (composite PK: item_num + kat_id)
+13. TlkpKategori     -> tlkp_kategori       | Master data kategori item
+14. TlkpSeries       -> tlkp_series         | Master data seri produk
+15. TlkpMold         -> tlkp_mold           | Master data mold
+16. TlkpMoldType     -> tlkp_moldtype       | Master data tipe mold
+17. TlkpJob          -> tlkp_job            | Master data jenis pekerjaan
+18. ViewDataAuth     -> VIEW_DATAAUTH       | View data karyawan (dari Sunfish HR)
+19. ViewEmployee     -> VIEW_EMPLOYEE       | View karyawan simplified (keyless entity, read-only)
+
+TOTAL GROUP A: 19 tabel/view
+
+
+###############################################################################
+# GROUP B: MOVE TO db_cos_checksheet (Rename prefix cos_ -> tlkp_cos_)
+###############################################################################
+# Kriteria: Tabel berawalan "cos_" yang isinya data REFERENSI/STATIS/MASTER.
+#           Ini adalah tabel definisi, template, konfigurasi, dan lookup
+#           yang JARANG berubah. Data di-maintain oleh admin, bukan dari
+#           input user sehari-hari.
+#
+# Logic:
+#   - Form definitions = template/blueprint form (master)
+#   - Check items = definisi item pengecekan (master)
+#   - Check sub rows = sub-definisi item (master)
+#   - Battery types = referensi tipe baterai COS-specific (master)
+#   - Battery standards = standar parameter per tipe baterai (master)
+#   - Problem columns = definisi kolom problem (master)
+#   - Signature slots = definisi slot tanda tangan (master)
+#   - Employee signatures = data tanda tangan per-karyawan (master/persistent)
+#
+# Format: [C# Model Class] -> [Nama Tabel Lama] => [Nama Tabel Baru] | [Deskripsi]
+###############################################################################
+
+ 1. CosFormDefinition   -> cos_form_definitions   => tlkp_cos_form_definitions   | Template/blueprint definisi form
+ 2. CosCheckItem        -> cos_check_items         => tlkp_cos_check_items         | Definisi item pengecekan per form
+ 3. CosCheckSubRow      -> cos_check_sub_rows      => tlkp_cos_check_sub_rows      | Sub-rows dari check item (misal: +/-, L/R, Mold1/Mold2)
+ 4. CosBatteryType      -> cos_battery_types        => tlkp_cos_battery_types        | Referensi tipe baterai COS-specific
+ 5. CosBatteryStandard  -> cos_battery_standards    => tlkp_cos_battery_standards    | Standar parameter per tipe baterai (min/max/value)
+ 6. CosProblemColumn    -> cos_problem_columns      => tlkp_cos_problem_columns      | Definisi kolom tabel problem
+ 7. CosSignatureSlot    -> cos_signature_slots      => tlkp_cos_signature_slots      | Definisi slot tanda tangan per role
+ 8. CosEmployeeSignature-> cos_employee_signatures  => tlkp_cos_employee_signatures  | Tanda tangan persistent per karyawan
+
+TOTAL GROUP B: 8 tabel
+
+
+###############################################################################
+# GROUP C: MOVE TO db_cos_checksheet (Rename prefix cos_ -> t_cos_)
+###############################################################################
+# Kriteria: Tabel berawalan "cos_" yang isinya data TRANSAKSI/INPUTAN USER.
+#           Ini adalah tabel yang SERING berubah, berisi data yang dihasilkan
+#           dari aktivitas submission form oleh operator dan approval workflow.
+#           Setiap record = 1 kejadian/event.
+#
+# Logic:
+#   - Submissions = form submission (transaksi utama)
+#   - Check values = nilai input per item per submission (transaksi detail)
+#   - Problems = catatan problem per submission (transaksi detail)
+#   - Signature entries = tanda tangan per role per submission (transaksi detail)
+#   - Approval attachments = file attachment memo per submission (transaksi detail)
+#
+# Format: [C# Model Class] -> [Nama Tabel Lama] => [Nama Tabel Baru] | [Deskripsi]
+###############################################################################
+
+ 1. CosSubmission         -> cos_submissions           => t_cos_submissions           | Data submission form (header transaksi)
+ 2. CosCheckValue         -> cos_check_values           => t_cos_check_values           | Nilai input per check item per submission
+ 3. CosProblem            -> cos_problems               => t_cos_problems               | Catatan problem per submission
+ 4. CosSignatureEntry     -> cos_signature_entries       => t_cos_signature_entries       | Record tanda tangan approval per submission
+ 5. CosApprovalAttachment -> cos_approval_attachments    => t_cos_approval_attachments    | File attachment memo leader per submission
+
+TOTAL GROUP C: 5 tabel
+
+
+###############################################################################
+# SUMMARY
+###############################################################################
+#
+#  DATABASE              | JUMLAH TABEL | KETERANGAN
+# -----------------------+--------------+------------------------------------
+#  db_master_data        | 19           | Tabel umum (tlkp_*, VIEW_*) — tidak berubah
+#  db_cos_checksheet     | 13           | 8 master (tlkp_cos_*) + 5 transaksi (t_cos_*)
+# -----------------------+--------------+------------------------------------
+#  TOTAL                 | 32           |
+#
+###############################################################################
+
+
+###############################################################################
+# RELATIONSHIP MAP (Foreign Keys lintas tabel)
+###############################################################################
+# Relasi yang HARUS diperhatikan saat split karena cross-database reference:
+#
+# >> WITHIN db_cos_checksheet (aman, dalam 1 DB):
+#   - tlkp_cos_check_items.form_id        -> tlkp_cos_form_definitions.id
+#   - tlkp_cos_check_sub_rows.check_item_id -> tlkp_cos_check_items.id
+#   - tlkp_cos_battery_types.form_id       -> tlkp_cos_form_definitions.id
+#   - tlkp_cos_battery_standards.battery_type_id -> tlkp_cos_battery_types.id
+#   - tlkp_cos_problem_columns.form_id     -> tlkp_cos_form_definitions.id
+#   - tlkp_cos_signature_slots.form_id     -> tlkp_cos_form_definitions.id
+#   - t_cos_submissions.form_id            -> tlkp_cos_form_definitions.id
+#   - t_cos_check_values.submission_id     -> t_cos_submissions.id
+#   - t_cos_problems.submission_id         -> t_cos_submissions.id
+#   - t_cos_signature_entries.submission_id -> t_cos_submissions.id
+#   - t_cos_approval_attachments.submission_id -> t_cos_submissions.id
+#
+# >> CROSS-DATABASE REFERENCE (perlu strategi khusus):
+#   - t_cos_submissions.line_id            -> db_master_data.tlkp_line.line_id
+#   - t_cos_submissions.shift_id           -> db_master_data.tlkp_shift.shift_id
+#   - t_cos_submissions.operator_emp_id    -> db_master_data.VIEW_DATAAUTH.emp_id
+#   - t_cos_submissions.leader_emp_id      -> db_master_data.VIEW_DATAAUTH.emp_id
+#   - t_cos_submissions.kasubsie_emp_id    -> db_master_data.VIEW_DATAAUTH.emp_id
+#   - t_cos_submissions.kasie_emp_id       -> db_master_data.VIEW_DATAAUTH.emp_id
+#   - tlkp_cos_battery_types.kat_id        -> db_master_data.tlkp_kategori.kat_id
+#   - tlkp_cos_employee_signatures.emp_id  -> db_master_data.VIEW_DATAAUTH.emp_id
+#
+# CATATAN: Cross-database FK tidak bisa di-enforce oleh SQL Server secara native.
+#          Harus dihandle di APPLICATION LEVEL (EF Core / controller logic).
+#
+###############################################################################
+
+
+###############################################################################
+# NOTES & PERTIMBANGAN
+###############################################################################
+#
+# 1. CosEmployeeSignature dimasukkan GROUP B (master) karena:
+#    - Data ini persistent per karyawan, bukan per submission
+#    - Sifatnya seperti "profil" tanda tangan, bukan transaksi
+#    - Jarang berubah (hanya update ketika employee mengubah TTD)
+#
+# 2. CosBatteryType dan CosBatteryStandard dimasukkan GROUP B karena:
+#    - Meskipun ada BatteryTypeSyncService yang sync dari master data,
+#      data ini tetap bersifat referensi/lookup untuk COS form
+#    - Data jarang berubah (hanya saat ada tipe baterai baru)
+#
+# 3. Seed data di FormCosDbContext.cs perlu dipecah:
+#    - Seed untuk GROUP A tetap di context db_master_data
+#    - Seed untuk GROUP B & C pindah ke context db_cos_checksheet
+#
+# 4. FormCosDbContext perlu dipecah menjadi 2 DbContext:
+#    - MasterDataDbContext -> db_master_data (GROUP A)
+#    - CosChecksheetDbContext -> db_cos_checksheet (GROUP B + C)
+#
+###############################################################################
