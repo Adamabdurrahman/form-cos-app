@@ -5,6 +5,7 @@ export interface AuthUser {
     empId: string;
     fullName: string;
     npk: string;
+    username: string;
     role: 'operator' | 'leader' | 'kasubsie' | 'kasie';
     jobName: string;
     department?: string;
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('auth_token', data.token);
             return { success: true, user: data.user as AuthUser };
         } else {
-            return { success: false, error: data.error || 'Login gagal.' };
+            return { success: false, error: data.message || 'Login gagal.' };
         }
     }
 

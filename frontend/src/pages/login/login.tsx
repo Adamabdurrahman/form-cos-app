@@ -1,7 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth-context';
+import { RegisterPage } from './register';
+import { ResetPasswordPage } from './reset-password';
 import './login.css';
+
+type AuthView = 'login' | 'register' | 'reset';
 
 export function LoginPage() {
     const [username, setUsername] = useState('');
@@ -9,6 +13,7 @@ export function LoginPage() {
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [currentView, setCurrentView] = useState<AuthView>('login');
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -17,6 +22,11 @@ export function LoginPage() {
 
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    function showToast(message: string, type: 'success' | 'error') {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast((t) => ({ ...t, show: false })), 4000);
+    }
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
@@ -34,14 +44,8 @@ export function LoginPage() {
                             user.role === 'kasubsie' ? 'Kasubsie' :
                                 user.role === 'kasie' ? 'Kasie' : user.jobName;
 
-                // Show success toast
-                setToast({
-                    show: true,
-                    message: `Selamat datang, ${user.fullName} (${roleName})`,
-                    type: 'success',
-                });
+                showToast(`Selamat datang, ${user.fullName} (${roleName})`, 'success');
 
-                // Redirect after short delay for toast visibility
                 setTimeout(() => {
                     if (user.role === 'operator') {
                         navigate('/', { replace: true });
@@ -51,18 +55,42 @@ export function LoginPage() {
                 }, 1500);
             } else {
                 setError(result.error || 'Login gagal.');
-                setToast({ show: true, message: result.error || 'Login gagal.', type: 'error' });
-                setTimeout(() => setToast((t) => ({ ...t, show: false })), 4000);
+                showToast(result.error || 'Login gagal.', 'error');
             }
-        } catch (err) {
+        } catch {
             setError('Terjadi kesalahan. Coba lagi nanti.');
-            setToast({ show: true, message: 'Terjadi kesalahan koneksi.', type: 'error' });
-            setTimeout(() => setToast((t) => ({ ...t, show: false })), 4000);
+            showToast('Terjadi kesalahan koneksi.', 'error');
         } finally {
             setIsSubmitting(false);
         }
     }
 
+    // ── Show Register or Reset page ──
+    if (currentView === 'register') {
+        return (
+            <RegisterPage
+                onBack={() => setCurrentView('login')}
+                onSuccess={(msg) => {
+                    setCurrentView('login');
+                    showToast(msg, 'success');
+                }}
+            />
+        );
+    }
+
+    if (currentView === 'reset') {
+        return (
+            <ResetPasswordPage
+                onBack={() => setCurrentView('login')}
+                onSuccess={(msg) => {
+                    setCurrentView('login');
+                    showToast(msg, 'success');
+                }}
+            />
+        );
+    }
+
+    // ── Login View ──
     return (
         <div className="login-container">
             {/* Background animated blobs */}
@@ -94,12 +122,12 @@ export function LoginPage() {
                         </svg>
                     </div>
                     <h1 className="login-title">COS Checksheet</h1>
-                    <p className="login-subtitle">Masuk untuk melanjutkan ke sistem</p>
+                    <p className="login-subtitle">Masuk ke akun Anda</p>
                 </div>
 
                 <form className="login-form" onSubmit={handleSubmit}>
                     <div className="input-group">
-                        <label htmlFor="login-username">Nama Lengkap</label>
+                        <label htmlFor="login-username">Username</label>
                         <div className="input-wrapper">
                             <svg className="input-icon" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
@@ -107,7 +135,7 @@ export function LoginPage() {
                             <input
                                 id="login-username"
                                 type="text"
-                                placeholder="Masukkan nama lengkap..."
+                                placeholder="Masukkan username..."
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 autoComplete="username"
@@ -118,7 +146,7 @@ export function LoginPage() {
                     </div>
 
                     <div className="input-group">
-                        <label htmlFor="login-password">NPK (Password)</label>
+                        <label htmlFor="login-password">Password</label>
                         <div className="input-wrapper">
                             <svg className="input-icon" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -126,7 +154,7 @@ export function LoginPage() {
                             <input
                                 id="login-password"
                                 type={showPassword ? 'text' : 'password'}
-                                placeholder="Masukkan NPK..."
+                                placeholder="Masukkan password..."
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 autoComplete="current-password"
@@ -167,6 +195,32 @@ export function LoginPage() {
                         )}
                     </button>
                 </form>
+
+                {/* ── Auth Action Links ── */}
+                <div className="auth-actions">
+                    <div className="auth-divider">
+                        <span>atau</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        className="auth-action-btn register-btn"
+                        onClick={() => setCurrentView('register')}
+                    >
+                        <svg viewBox="0 0 20 20" fill="currentColor" className="action-icon">
+                            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                        </svg>
+                        Buat Akun Baru
+                    </button>
+
+                    <button
+                        type="button"
+                        className="auth-action-link"
+                        onClick={() => setCurrentView('reset')}
+                    >
+                        Lupa password? Reset di sini
+                    </button>
+                </div>
 
                 <div className="login-footer">
                     <p>© 2026 PT GS Battery — COS Checksheet System</p>

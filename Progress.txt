@@ -1555,6 +1555,35 @@
   4. Verifikasi dropdown Line hanya tampilkan line area COS
   5. (Future) Jika DBPORTAL menambah kolom userKasie_id → uncomment kembali
 
+  ════════════════════════════════════════════════════════════════════════════════
+ 11. AUTHENTICATION OVERHAUL (Sesi 10 — 2026-02-19)
+     Mission: Full Auth System (Register, Login, Reset) & Database Separation
+  ════════════════════════════════════════════════════════════════════════════════
+
+  ✅ Database: User Accounts Table
+  ─────────────────────────────────────────
+  - New Table: `t_cos_user_accounts` di db_cos_checksheet.
+  - Columns: Id, NPK (Unique), Username (Unique), PasswordHash, Timestamps.
+  - Logic: Memisahkan kredensial login dari data karyawan (View Employee).
+
+  ✅ Feature: Registration (Create Account)
+  ─────────────────────────────────────────
+  - Validation 1: NPK harus terdaftar di Master Data (Valid Employee).
+  - Validation 2: NPK belum pernah punya akun sebelumnya (Prevent Duplicate).
+  - Security: Password di-hash menggunakan BCrypt sebelum disimpan.
+
+  ✅ Feature: Modern Login Flow
+  ─────────────────────────────────────────
+  - Input: Menggunakan Username & Password (bukan lagi NPK polos).
+  - Backward Compatibility: Setelah login sukses, backend mengambil NPK terkait
+    dan memasukkannya ke JWT Token.
+  - Result: Fitur Auto-Lock Form & Hierarchy Approval tetap berjalan normal
+    karena sistem tetap mengenali user berdasarkan NPK di balik layar.
+
+  ✅ Feature: Reset Password
+  ─────────────────────────────────────────
+  - Flow: Validasi NPK -> Input New Password -> Update Hash di Database.
+  - Security: Hanya bisa reset jika NPK valid.
 
 ================================================================================
   END OF PROGRESS LOG

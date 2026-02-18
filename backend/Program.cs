@@ -1,4 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using backend.Data;
 using backend.Services;
 
@@ -38,6 +41,33 @@ builder.Services.AddDbContext<PadCostDbContext>(options =>
 
 // ── Application Services ──
 builder.Services.AddScoped<ProductionDataService>();
+
+// ── JWT Authentication ──
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"]
+    ?? throw new InvalidOperationException("JwtSettings:SecretKey is not configured.");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(2),
+    };
+});
+
+builder.Services.AddAuthorization();
 
 // ── Background Services ──
 builder.Services.AddHostedService<BatteryTypeSyncService>();
@@ -88,6 +118,10 @@ app.UseCors("AllowFrontend");
 // Serve static files dari wwwroot (hasil build frontend)
 app.UseDefaultFiles();     // index.html sebagai default
 app.UseStaticFiles();      // serve file dari wwwroot/
+
+// Authentication & Authorization (JWT)
+app.UseAuthentication();
+app.UseAuthorization();
 
 // API routes
 app.MapControllers();

@@ -28,6 +28,9 @@ public class CosDbContext : DbContext
     public DbSet<CosSignatureEntry> CosSignatureEntries => Set<CosSignatureEntry>();
     public DbSet<CosApprovalAttachment> CosApprovalAttachments => Set<CosApprovalAttachment>();
 
+    // ═══ Auth: User Accounts ═══
+    public DbSet<UserAccount> UserAccounts => Set<UserAccount>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -61,6 +64,12 @@ public class CosDbContext : DbContext
 
         modelBuilder.Entity<CosEmployeeSignature>()
             .HasIndex(es => es.EmpId).IsUnique();
+
+        // ═══ UserAccount Constraints ═══
+        modelBuilder.Entity<UserAccount>()
+            .HasIndex(u => u.Npk).IsUnique();
+        modelBuilder.Entity<UserAccount>()
+            .HasIndex(u => u.Username).IsUnique();
 
         // ═══ Cascades ═══
         modelBuilder.Entity<CosSubmission>()
