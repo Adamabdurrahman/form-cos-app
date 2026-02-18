@@ -1,0 +1,25 @@
+# ── Node.js ──
+node_modules/
+frontend/node_modules/
+
+# ── .NET ──
+backend/bin/
+backend/obj/
+
+# ── Build outputs ──
+frontend/dist/
+backend/wwwroot/assets/
+
+# ── IDE ──
+.vs/
+.vscode/
+*.suo
+*.user
+
+# ── OS ──
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ── Logs ──
+*.log
