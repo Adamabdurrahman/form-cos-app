@@ -1585,7 +1585,27 @@
   - Flow: Validasi NPK -> Input New Password -> Update Hash di Database.
   - Security: Hanya bisa reset jika NPK valid.
 
+════════════════════════════════════════════════════════════════════════════════
+ 12. UI POLISH — LOGIN PAGE REFINEMENTS (Sesi 11 Lanjutan — 2026-02-19)
+    Mission: Memperbaiki visual hierarchy dan simetri pada halaman Login
+════════════════════════════════════════════════════════════════════════════════
+
+  ✅ Login UI Refinements (CSS Fixes)
+  ─────────────────────────────────────────
+  - File: frontend/src/pages/login/login.css
+  
+  1. Fix Tombol "Buat Akun Baru" (Symmetry Fix)
+     → Masalah: Ikon SVG terlalu besar dan lebar tombol tidak full (mengikuti konten).
+     → Solusi: Mengubah container `.auth-actions` menjadi `align-items: stretch`.
+     → Solusi: Memberikan ukuran eksplisit (18px) pada `.action-icon` agar proporsional.
+     → Hasil: Tombol sekarang selebar input field dan simetris dengan tombol "Masuk".
+
+  2. Fix Divider "--- atau ---" (Vertical Alignment)
+     → Masalah: Teks terlihat "menempel" ke atas (jarak tidak seimbang).
+     → Solusi: Update margin `.auth-divider` menjadi `24px 0 14px`.
+     → Logic: Margin bawah diperkecil untuk mengkompensasi `gap: 10px` dari container.
+     → Hasil: Divider terlihat presisi di tengah (secara visual center).
 ================================================================================
   END OF PROGRESS LOG
-  Last Updated: 2026-02-18 (Sesi 10 — Setup Multi-Server & Schema Compatibility Fix)
+  Last Updated: 2026-02-19 (Sesi 11 — Auth Overhaul & UI Polish)
 ================================================================================

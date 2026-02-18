@@ -421,7 +421,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 4px 0;
+    margin: 24px 0 14px;
 }
 
 .auth-divider::before,
@@ -445,26 +445,34 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    align-items: center;
+    align-items: stretch; /* UBAH DARI 'center' KE 'stretch' */
+    width: 100%;          /* Pastikan lebar penuh */
 }
 
 /* ── Register button ── */
 .auth-action-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: center; /* Pastikan konten teks & ikon di tengah */
     gap: 8px;
     width: 100%;
-    padding: 12px 20px;
+    padding: 13px 24px;      /* Samakan dengan padding .login-btn agar tinggi tombol sama */
     border: 1px solid rgba(34, 197, 94, 0.25);
     border-radius: 12px;
     background: rgba(34, 197, 94, 0.08);
     color: #86efac;
-    font-size: 14px;
+    font-size: 14px;         /* Samakan atau sedikit lebih kecil dari tombol login */
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
     transition: all 0.25s ease;
+    box-sizing: border-box;  /* Pastikan padding tidak menambah lebar total */
+}
+
+.auth-action-btn .action-icon {
+    width: 18px;  /* Paksa ukuran lebar ikon */
+    height: 18px; /* Paksa ukuran tinggi ikon */
+    flex-shrink: 0; /* Mencegah ikon gepeng */
 }
 
 .auth-action-btn:hover {
